@@ -366,7 +366,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
         sessionText += (i > 0 ? ' ' : '') + event.results[i][0].transcript;
       }
       
-      const step = currentStepRef.current;
+      const step = currentStep;
       const baseText = committedTextRef.current || '';
       const combined = (baseText + " " + sessionText).replace(/\s+/g, ' ').trim();
       
@@ -456,7 +456,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
       addLog("SpeechRecognition session ended");
 
       // Auto-commit session text to committedText when the session ends
-      const step = currentStepRef.current;
+      const step = currentStep;
       setFormData(prev => {
         const val = step === 1 ? prev.name :
                     step === 2 ? prev.phone :
@@ -502,7 +502,6 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
     userStoppedRef.current = true; 
     setIsListening(false);
     isListeningRef.current = false;
-    setCommittedText(''); 
 
     synthesisRef.current?.cancel();
     
@@ -575,6 +574,17 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
     };
   }, [currentStep, micStatus, isOffline]);
 
+  // Unconditionally sync committedText with the target step's current value on step change
+  useEffect(() => {
+    const val = currentStep === 1 ? formData.name :
+                currentStep === 2 ? formData.phone :
+                currentStep === 3 ? formData.village :
+                currentStep === 5 ? formData.description : '';
+    setCommittedText(val);
+    committedTextRef.current = val;
+    addLog(`Current step changed to ${currentStep}. Reset committedText to "${val}"`);
+  }, [currentStep]);
+
   // ─── Control Strip Activations ────────────────────────
   const handleStartResume = async () => {
     if (isOffline) return;
@@ -646,18 +656,27 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
     setIsAudioQuiet(false);
   };
 
+  const updateFieldManually = (fieldName, val) => {
+    setFormData(prev => ({ ...prev, [fieldName]: val }));
+    const activeFieldName = currentStep === 1 ? 'name' :
+                            currentStep === 2 ? 'phone' :
+                            currentStep === 3 ? 'village' :
+                            currentStep === 5 ? 'description' : '';
+    if (fieldName === activeFieldName) {
+      setCommittedText(val);
+      committedTextRef.current = val;
+    }
+  };
+
   // ─── Manual Text Editing ───
   const handleInputChange = (val) => {
-    setFormData(prev => {
-      const u = { ...prev };
-      if (currentStep === 1) u.name = val;
-      if (currentStep === 2) u.phone = val;
-      if (currentStep === 3) u.village = val;
-      if (currentStep === 5) u.description = val;
-      return u;
-    });
-    setCommittedText(val);
-    committedTextRef.current = val;
+    const fieldName = currentStep === 1 ? 'name' :
+                      currentStep === 2 ? 'phone' :
+                      currentStep === 3 ? 'village' :
+                      currentStep === 5 ? 'description' : '';
+    if (fieldName) {
+      updateFieldManually(fieldName, val);
+    }
   };
 
   // ─── Navigation ───
@@ -1074,7 +1093,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
               type="text"
               className="form-control"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => updateFieldManually('name', e.target.value)}
               onFocus={() => {
                 if (isListening) handlePause();
               }}
@@ -1091,7 +1110,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
               type="text"
               className="form-control"
               value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              onChange={(e) => updateFieldManually('phone', e.target.value)}
               onFocus={() => {
                 if (isListening) handlePause();
               }}
@@ -1108,7 +1127,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
               type="text"
               className="form-control"
               value={formData.village}
-              onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
+              onChange={(e) => updateFieldManually('village', e.target.value)}
               onFocus={() => {
                 if (isListening) handlePause();
               }}
@@ -1124,7 +1143,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
             <select
               className="form-control"
               value={formData.category}
-              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+              onChange={(e) => updateFieldManually('category', e.target.value)}
               onFocus={() => {
                 if (isListening) handlePause();
               }}
@@ -1145,7 +1164,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
               className="form-control"
               rows="4"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => updateFieldManually('description', e.target.value)}
               onFocus={() => {
                 if (isListening) handlePause();
               }}
