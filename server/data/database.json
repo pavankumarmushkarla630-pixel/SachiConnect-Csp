@@ -1,0 +1,307 @@
+{
+  "complaints": [
+    {
+      "complaint_audio_url": "/uploads/sample_audio_1.wav",
+      "complaint_category": "Streetlights",
+      "complaint_description_text": "Main bazaar streetlights have been flickering or off completely for the last 5 days. It is dangerous to walk after 7 PM.",
+      "created_at": "2026-06-16T17:29:54.616Z",
+      "id": "SC-7821",
+      "language": "Telugu",
+      "latitude": 14.2882,
+      "longitude": 77.7885,
+      "photo_url": "/uploads/sample_streetlight.jpg",
+      "resident_name": "Ramesh Kumar",
+      "status": "In Progress",
+      "status_history": [
+        {
+          "notes": "Complaint registered successfully via voice assistant.",
+          "status": "Submitted",
+          "updated_at": "2026-06-16T17:29:54.616Z"
+        },
+        {
+          "notes": "Assigned to Ward Assistant (Electricity Department).",
+          "status": "Assigned",
+          "updated_at": "2026-06-17T17:29:54.616Z"
+        },
+        {
+          "notes": "Technician dispatched to inspect lines and replace bulbs.",
+          "status": "In Progress",
+          "updated_at": "2026-06-18T17:29:54.616Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "complaint_audio_url": "/uploads/sample_audio_2.wav",
+      "complaint_category": "Water Supply",
+      "complaint_description_text": "Drinking water pipe leak near the panchayat office. Clean drinking water is getting wasted onto the road.",
+      "created_at": "2026-06-12T17:29:54.616Z",
+      "id": "SC-9214",
+      "language": "English",
+      "latitude": 14.7103,
+      "longitude": 77.6432,
+      "photo_url": "/uploads/sample_water_leak.jpg",
+      "resident_name": "Saraswathi Devi",
+      "status": "Resolved",
+      "status_history": [
+        {
+          "notes": "Complaint registered.",
+          "status": "Submitted",
+          "updated_at": "2026-06-12T17:29:54.616Z"
+        },
+        {
+          "notes": "Assigned to Water Works engineering team.",
+          "status": "Assigned",
+          "updated_at": "2026-06-13T17:29:54.616Z"
+        },
+        {
+          "notes": "Excavation and pipe replacement in progress.",
+          "status": "In Progress",
+          "updated_at": "2026-06-14T17:29:54.616Z"
+        },
+        {
+          "notes": "Leak repaired. Water supply restored and road patched.",
+          "status": "Resolved",
+          "updated_at": "2026-06-15T17:29:54.616Z"
+        }
+      ],
+      "village_area": "Bukkarayasamudram"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Roads",
+      "complaint_description_text": "Huge pothole in the middle of the school road. Two motorcyclists slipped yesterday. Urgently needs filling.",
+      "created_at": "2026-06-19T17:29:54.616Z",
+      "id": "SC-1054",
+      "language": "Telugu",
+      "latitude": 14.6225,
+      "longitude": 77.6075,
+      "photo_url": "/uploads/sample_pothole.jpg",
+      "resident_name": "Mallesh G.",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Complaint registered with geo-tagged photo.",
+          "status": "Submitted",
+          "updated_at": "2026-06-19T17:29:54.616Z"
+        }
+      ],
+      "village_area": "Rapthadu"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Drainage",
+      "complaint_description_text": "Streetlight near house is broken",
+      "created_at": "2026-06-20T09:43:30.039Z",
+      "id": "SC-3292",
+      "language": "English",
+      "latitude": 17.702257,
+      "longitude": 83.166693,
+      "photo_url": "",
+      "resident_name": "Ramesh Kumar",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-20T09:43:30.039Z"
+        }
+      ],
+      "village_area": "KothacheruvuVasanthapuram"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Public Facilities",
+      "complaint_description_text": "Reported via voice assistant.",
+      "created_at": "2026-06-20T10:40:50.778Z",
+      "id": "SC-2118",
+      "language": "Telugu",
+      "latitude": 0,
+      "longitude": 0,
+      "photo_url": "",
+      "resident_name": "ggh",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by ggh",
+          "status": "Submitted",
+          "updated_at": "2026-06-20T10:40:50.778Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Sanitation",
+      "complaint_description_text": "Reported via voice assistant.",
+      "created_at": "2026-06-21T06:34:35.877Z",
+      "id": "SC-1366",
+      "language": "English",
+      "latitude": 17.702257,
+      "longitude": 83.166693,
+      "photo_url": "/uploads/photo-1782023675820-783583517.jpg",
+      "resident_name": "Pawan Kumar",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Pawan Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-21T06:34:35.877Z"
+        }
+      ],
+      "village_area": "Pinky"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Sanitation",
+      "complaint_description_text": "Reported via voice assistant.",
+      "created_at": "2026-06-21T06:41:57.696Z",
+      "id": "SC-6911",
+      "language": "English",
+      "latitude": 17.702257,
+      "longitude": 83.166693,
+      "photo_url": "",
+      "resident_name": "Ramkumar",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramkumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-21T06:41:57.696Z"
+        }
+      ],
+      "village_area": "pe"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Streetlights",
+      "complaint_description_text": "Reported via voice assistant.",
+      "created_at": "2026-06-21T07:38:17.088Z",
+      "id": "SC-2097",
+      "language": "English",
+      "latitude": 0,
+      "longitude": 0,
+      "photo_url": "",
+      "resident_name": "Pawan Kumar",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Pawan Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-21T07:38:17.088Z"
+        }
+      ],
+      "village_area": "Pinky"
+    },
+    {
+      "id": "SC-9709",
+      "resident_name": "Pawan Kumar",
+      "resident_phone": "8639768887",
+      "village_area": "Pakki",
+      "complaint_category": "Sanitation",
+      "complaint_description_text": "Reported via voice assistant.",
+      "complaint_audio_url": "",
+      "photo_url": "",
+      "latitude": 0,
+      "longitude": 0,
+      "language": "English",
+      "status": "Submitted",
+      "created_at": "2026-06-21T07:49:03.165Z",
+      "status_history": [
+        {
+          "status": "Submitted",
+          "updated_at": "2026-06-21T07:49:03.165Z",
+          "notes": "Grievance registered successfully by Pawan Kumar"
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "name": "Ramesh Kumar",
+      "password": "123456",
+      "phone": "9876543210",
+      "resident_id": "RES-1029",
+      "role": "Resident",
+      "village": "Kothacheruvu"
+    },
+    {
+      "name": "V. Satyanarayana",
+      "official_id": "OFF-9988",
+      "password": "admin123",
+      "phone": "9988776655",
+      "role": "Authority",
+      "village": "District Head Office"
+    },
+    {
+      "name": "Citizen 2018",
+      "phone": "6302262018",
+      "role": "Resident",
+      "village": "Anantapur"
+    },
+    {
+      "created_at": "2026-06-20T10:11:38.874Z",
+      "latitude": 17.702257,
+      "longitude": 83.166693,
+      "name": "Satish P.",
+      "phone": "9000888000",
+      "resident_id": "RES-1869",
+      "role": "Resident",
+      "village": "Bukkarayasamudram"
+    },
+    {
+      "created_at": "2026-06-20T10:24:11.866Z",
+      "latitude": 17.702257,
+      "longitude": 83.166693,
+      "name": "Venkata Naraysana",
+      "phone": "7788995544",
+      "resident_id": "RES-9209",
+      "role": "Resident",
+      "village": "Bukkarayasamudram"
+    },
+    {
+      "created_at": "2026-06-20T14:00:15.425Z",
+      "name": "Veera Swamy",
+      "phone": "9898989898",
+      "resident_id": "RES-5932",
+      "role": "Resident",
+      "village": "Anantapur"
+    },
+    {
+      "created_at": "2026-06-20T14:11:22.061Z",
+      "name": "Swamy",
+      "password": "swamy123",
+      "phone": "9000000000",
+      "resident_id": "RES-9718",
+      "role": "Resident",
+      "village": "Anantapur"
+    },
+    {
+      "created_at": "2026-06-20T14:26:04.840Z",
+      "name": "P. Srinivas",
+      "official_id": "OFF-1122",
+      "password": "admin123",
+      "phone": "",
+      "role": "Authority",
+      "village": "District Head Office"
+    },
+    {
+      "created_at": "2026-06-20T15:00:02.114Z",
+      "name": "pavan",
+      "password": "1234",
+      "phone": "1234567890",
+      "resident_id": "RES-3234",
+      "role": "Resident",
+      "village": "pedapenki"
+    },
+    {
+      "created_at": "2026-06-21T07:37:38.955Z",
+      "name": "sai",
+      "password": "1234",
+      "phone": "8639768887",
+      "resident_id": "RES-2258",
+      "role": "Resident",
+      "village": "pedapenki"
+    }
+  ]
+}
