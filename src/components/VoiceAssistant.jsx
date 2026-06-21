@@ -699,6 +699,94 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onCance
         </button>
       </div>
 
+      {/* ── Alternative Manual Entry Form ── */}
+      <div className="va-manual-form" style={{ marginTop: '36px', borderTop: '2px dashed var(--border-color)', paddingTop: '28px', textAlign: 'left' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>
+          ⌨️ {isTelugu ? 'లేదా సమాచారాన్ని ఇక్కడ టైప్ చేయండి' : 'Or Type Your Complaint Manually'}
+        </h3>
+        <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+          {isTelugu ? 'వాయిస్ అసిస్టెంట్ ఉపయోగించడం ఇష్టం లేకుంటే క్రింది వివరాలను పూరించండి:' : "If you prefer not to use the voice assistant, fill out the form below:"}
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              👤 {isTelugu ? 'మీ పేరు' : 'Your Name'}
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder={isTelugu ? 'మీ పేరు టైప్ చేయండి' : 'Enter your name'}
+              style={{ fontSize: '14px', padding: '12px' }}
+            />
+          </div>
+
+          <div>
+            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              📍 {isTelugu ? 'గ్రామం / ప్రాంతం' : 'Village / Area'}
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              value={formData.village}
+              onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
+              placeholder={isTelugu ? 'మీ గ్రామం టైప్ చేయండి' : 'Enter your village or area'}
+              style={{ fontSize: '14px', padding: '12px' }}
+            />
+          </div>
+
+          <div>
+            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              📋 {isTelugu ? 'సమస్య వర్గం' : 'Complaint Category'}
+            </label>
+            <select
+              className="form-control"
+              value={formData.category}
+              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+              style={{ fontSize: '14px', padding: '12px', height: '48px', cursor: 'pointer' }}
+            >
+              <option value="">{isTelugu ? '-- వర్గాన్ని ఎంచుకోండి --' : '-- Select Category --'}</option>
+              {categories.map(c => (
+                <option key={c.en} value={c.en}>{isTelugu ? c.te : c.en}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              ✍️ {isTelugu ? 'సమస్య వివరణ' : 'Complaint Description'}
+            </label>
+            <textarea
+              className="form-control"
+              rows="4"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder={isTelugu ? 'సమస్యను వివరంగా ఇక్కడ టైప్ చేయండి...' : 'Describe your problem in detail here...'}
+              style={{ fontSize: '14px', padding: '12px', resize: 'vertical' }}
+            />
+          </div>
+
+          <button
+            className="btn btn-primary"
+            style={{ padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px', marginTop: '10px' }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!formData.name.trim()) return showToast(isTelugu ? 'దయచేసి మీ పేరు టైప్ చేయండి' : 'Please enter your name');
+              if (!formData.village.trim()) return showToast(isTelugu ? 'దయచేసి మీ గ్రామం టైప్ చేయండి' : 'Please enter your village');
+              if (!formData.category) return showToast(isTelugu ? 'దయచేసి ఒక వర్గాన్ని ఎంచుకోండి' : 'Please select a category');
+              if (!formData.description.trim()) return showToast(isTelugu ? 'దయచేసి సమస్య వివరణ టైప్ చేయండి' : 'Please describe your complaint');
+              
+              // Proceed manually (audioBlob will be null)
+              onCompleteStep(formData, null);
+            }}
+          >
+            📸 {isTelugu ? 'సాక్ష్యం & స్థానం దశకు వెళ్ళండి' : 'Proceed to Photo Evidence'}
+          </button>
+        </div>
+      </div>
+
       {/* ── Debug Console (Collapsible) ── */}
       <div className="va-debug-panel">
         <details>

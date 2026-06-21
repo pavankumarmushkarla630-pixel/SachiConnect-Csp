@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-export default function AIChatbot({ language }) {
+export default function AIChatbot({ language, inline = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -127,6 +127,80 @@ export default function AIChatbot({ language }) {
     window.speechSynthesis.speak(utterance);
   };
 
+  const chatContent = (
+    <div className={`chatbot-window ${inline ? 'inline' : ''}`}>
+      {/* Header */}
+      <div className="chatbot-header">
+        <span className="chatbot-title">🤖 {t.botName}</span>
+        {!inline && <button className="chatbot-close" onClick={() => setIsOpen(false)}>×</button>}
+      </div>
+
+      {/* Message List */}
+      <div className="chatbot-messages">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`chat-bubble ${msg.sender}`}>
+            <span>{msg.text}</span>
+            {msg.sender === 'bot' && (
+              <button 
+                className="bot-speaker-btn"
+                onClick={() => handleTextToSpeech(msg.text)}
+                title="Read answer out loud"
+              >
+                🔊
+              </button>
+            )}
+          </div>
+        ))}
+        {isTyping && (
+          <div className="typing-indicator">
+            <div className="typing-dot"></div>
+            <div className="typing-dot"></div>
+            <div className="typing-dot"></div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Preset Query Chips Suggestions */}
+      <div className="chatbot-suggestions">
+        <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestReport)}>
+          💡 {t.suggestReport}
+        </div>
+        <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestTrack)}>
+          🔍 {t.suggestTrack}
+        </div>
+        <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestPanchayat)}>
+          🏛️ {t.suggestPanchayat}
+        </div>
+        <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestSchemes)}>
+          🌾 {t.suggestSchemes}
+        </div>
+      </div>
+
+      {/* Free Text Input area */}
+      <div className="chatbot-input-area">
+        <input 
+          type="text" 
+          className="chatbot-input" 
+          placeholder={t.placeholder}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
+        />
+        <button 
+          className="chatbot-send" 
+          onClick={() => handleSendMessage(inputValue)}
+        >
+          ➔
+        </button>
+      </div>
+    </div>
+  );
+
+  if (inline) {
+    return chatContent;
+  }
+
   return (
     <>
       {/* Floating Button */}
@@ -139,75 +213,7 @@ export default function AIChatbot({ language }) {
       </button>
 
       {/* Glassmorphic Chat Window */}
-      {isOpen && (
-        <div className="chatbot-window">
-          {/* Header */}
-          <div className="chatbot-header">
-            <span className="chatbot-title">🤖 {t.botName}</span>
-            <button className="chatbot-close" onClick={() => setIsOpen(false)}>×</button>
-          </div>
-
-          {/* Message List */}
-          <div className="chatbot-messages">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`chat-bubble ${msg.sender}`}>
-                <span>{msg.text}</span>
-                {msg.sender === 'bot' && (
-                  <button 
-                    className="bot-speaker-btn"
-                    onClick={() => handleTextToSpeech(msg.text)}
-                    title="Read answer out loud"
-                  >
-                    🔊
-                  </button>
-                )}
-              </div>
-            ))}
-            {isTyping && (
-              <div className="typing-indicator">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Preset Query Chips Suggestions */}
-          <div className="chatbot-suggestions">
-            <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestReport)}>
-              💡 {t.suggestReport}
-            </div>
-            <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestTrack)}>
-              🔍 {t.suggestTrack}
-            </div>
-            <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestPanchayat)}>
-              🏛️ {t.suggestPanchayat}
-            </div>
-            <div className="suggestion-chip" onClick={() => handleSendMessage(t.suggestSchemes)}>
-              🌾 {t.suggestSchemes}
-            </div>
-          </div>
-
-          {/* Free Text Input area */}
-          <div className="chatbot-input-area">
-            <input 
-              type="text" 
-              className="chatbot-input" 
-              placeholder={t.placeholder}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
-            />
-            <button 
-              className="chatbot-send" 
-              onClick={() => handleSendMessage(inputValue)}
-            >
-              ➔
-            </button>
-          </div>
-        </div>
-      )}
+      {isOpen && chatContent}
     </>
   );
 }
