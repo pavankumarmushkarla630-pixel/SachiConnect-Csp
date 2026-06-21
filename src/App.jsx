@@ -455,8 +455,10 @@ export default function App() {
                   language={language}
                   user={user}
                   onCompleteStep={handleVoiceAssistantComplete}
+                  onSubmissionComplete={handleSubmissionComplete}
                   onCancel={() => setActiveScreen('resident-dashboard')}
                   showToast={showToast}
+                  changeLanguage={setLanguage}
                 />
               )}
 
