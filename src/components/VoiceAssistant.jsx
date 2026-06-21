@@ -202,9 +202,8 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onCance
     addLog(`Initializing SpeechRecognition [Lang: ${isTelugu ? 'te-IN' : 'en-US'}]`);
     const rec = new SR();
     
-    // continuous = false offers dramatically superior accuracy for short answers like names & villages
-    // Our smart committedText accumulator already handles restarts seamlessly.
-    rec.continuous      = false;   
+    // Enable continuous listening to keep the mic active during normal pauses
+    rec.continuous      = true;   
     rec.interimResults  = true;   // show words in real-time as they're spoken
     rec.maxAlternatives = 1;
     rec.lang = isTelugu ? 'te-IN' : 'en-US';
@@ -218,7 +217,8 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onCance
     rec.onresult = (event) => {
       let sessionText = '';
       for (let i = 0; i < event.results.length; i++) {
-        sessionText += event.results[i][0].transcript;
+        // Add a space between segments to prevent words from sticking together
+        sessionText += (i > 0 ? ' ' : '') + event.results[i][0].transcript;
       }
       
       const step = currentStepRef.current;
@@ -231,18 +231,22 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onCance
 
       addLog(`Heard (sessionText: "${sessionText.trim()}", combined: "${combined}")`);
 
-      const low  = combined.toLowerCase().trim();
+      // ── Strict command matching on the current segment text ──
+      // This prevents commands like 'back' or 'submit' from triggering when spoken as part of longer sentences/descriptions.
+      // We look at the last result's transcript (what was just spoken) for the command.
+      const lastResultIndex = event.resultIndex;
+      const currentSegment = event.results[lastResultIndex] ? event.results[lastResultIndex][0].transcript : '';
+      const cleanSegment = currentSegment.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
 
-      // Navigation commands
-      const isNext    = low.includes('next') || low.includes('తరువాత') || low.includes('సరి');
-      const isBack    = low.includes('back') || low.includes('వెనుకకు');
-      const isCancel  = low.includes('cancel') || low.includes('రద్దు');
-      const isProceed = low.includes('proceed') || low.includes('ముందుకు') || low.includes('submit');
+      const isNextCmd    = ['next', 'next step', 'go next', 'తరువాత', 'సరి'].includes(cleanSegment);
+      const isBackCmd    = ['back', 'go back', 'వెనుకకు'].includes(cleanSegment);
+      const isCancelCmd  = ['cancel', 'cancel please', 'రద్దు'].includes(cleanSegment);
+      const isProceedCmd = ['proceed', 'submit', 'submit complaint', 'ముందుకు'].includes(cleanSegment);
 
-      if (isNext    && step < 4)  { addLog("Command recognized: NEXT"); rec.stop(); goNext();   return; }
-      if (isBack    && step > 1)  { addLog("Command recognized: BACK"); rec.stop(); goPrev();   return; }
-      if (isCancel)               { addLog("Command recognized: CANCEL"); rec.stop(); onCancel(); return; }
-      if (isProceed && step === 4){ addLog("Command recognized: SUBMIT"); rec.stop(); goNext();   return; }
+      if (isNextCmd    && step < 4)  { addLog("Command recognized: NEXT"); rec.stop(); goNext();   return; }
+      if (isBackCmd    && step > 1)  { addLog("Command recognized: BACK"); rec.stop(); goPrev();   return; }
+      if (isCancelCmd)               { addLog("Command recognized: CANCEL"); rec.stop(); onCancel(); return; }
+      if (isProceedCmd && step === 4){ addLog("Command recognized: SUBMIT"); rec.stop(); goNext();   return; }
 
       // Content update — real-time display
       setFormData(prev => {
@@ -255,6 +259,7 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onCance
 
       // Category matching (step 3)
       if (step === 3) {
+        const low = combined.toLowerCase().trim();
         const match = categories.find(c =>
           low.includes(c.en.toLowerCase()) || low.includes(c.te)
         );
