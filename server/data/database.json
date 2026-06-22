@@ -194,26 +194,26 @@
       "village_area": "Pinky"
     },
     {
-      "id": "SC-9709",
-      "resident_name": "Pawan Kumar",
-      "resident_phone": "8639768887",
-      "village_area": "Pakki",
+      "complaint_audio_url": "",
       "complaint_category": "Sanitation",
       "complaint_description_text": "Reported via voice assistant.",
-      "complaint_audio_url": "",
-      "photo_url": "",
+      "created_at": "2026-06-21T07:49:03.165Z",
+      "id": "SC-9709",
+      "language": "English",
       "latitude": 0,
       "longitude": 0,
-      "language": "English",
+      "photo_url": "",
+      "resident_name": "Pawan Kumar",
+      "resident_phone": "8639768887",
       "status": "Submitted",
-      "created_at": "2026-06-21T07:49:03.165Z",
       "status_history": [
         {
+          "notes": "Grievance registered successfully by Pawan Kumar",
           "status": "Submitted",
-          "updated_at": "2026-06-21T07:49:03.165Z",
-          "notes": "Grievance registered successfully by Pawan Kumar"
+          "updated_at": "2026-06-21T07:49:03.165Z"
         }
-      ]
+      ],
+      "village_area": "Pakki"
     }
   ],
   "users": [
@@ -302,6 +302,15 @@
       "resident_id": "RES-2258",
       "role": "Resident",
       "village": "pedapenki"
+    },
+    {
+      "created_at": "2026-06-21T09:56:16.213Z",
+      "name": "Rajesh",
+      "password": "1234",
+      "phone": "9182378818",
+      "resident_id": "RES-6940",
+      "role": "Resident",
+      "village": "Pakki"
     }
   ]
 }
