@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AIChatbot from './AIChatbot';
 
-const PREDEFINED_VILLAGES = ['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu', 'Pedapenki'];
+const PREDEFINED_VILLAGES = ['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu', 'Pedapenki', 'Duvvada'];
 
 const AP_DISTRICTS = [
   "Alluri Sitharama Raju", "Anakapalli", "Anantapur", "Annamayya", "Bapatla", 
@@ -13,10 +13,11 @@ const AP_DISTRICTS = [
 ];
 
 const VILLAGE_COORDINATES = {
-  'Kothacheruvu': { lat: 14.2016, lng: 77.7818 },
-  'Bukkarayasamudram': { lat: 14.7082, lng: 77.6417 },
-  'Rapthadu': { lat: 14.6200, lng: 77.6080 },
-  'Pedapenki': { lat: 18.5284, lng: 83.2982 }
+  'Kothacheruvu': { lat: 14.2016, lng: 77.7818, te: 'కొత్తచెరువు' },
+  'Bukkarayasamudram': { lat: 14.7082, lng: 77.6417, te: 'బుక్కరాయసముద్రం' },
+  'Rapthadu': { lat: 14.6200, lng: 77.6080, te: 'రాప్తాడు' },
+  'Pedapenki': { lat: 18.5284, lng: 83.2982, te: 'పెదపెంకి' },
+  'Duvvada': { lat: 17.6997, lng: 83.1575, te: 'దువ్వాడ' }
 };
 
 const findClosestVillage = (latitude, longitude) => {
@@ -29,7 +30,7 @@ const findClosestVillage = (latitude, longitude) => {
       closest = name;
     }
   }
-  return closest;
+  return { name: closest, distance: minDistance };
 };
 
 export default function ResidentDashboard({ user, language, setScreen, setSelectedComplaintId, showToast }) {
@@ -52,7 +53,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
       greeting: "Welcome,",
       villageInfo: "Village Panchayat: Kothacheruvu",
       newReport: "Report Grievance",
-      newReportSub: "Use voice assistant",
+      newReportSub: "Fill out grievance form",
       track: "Track Grievance",
       trackSub: "View progress timeline",
       history: "My Grievances",
@@ -88,7 +89,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
       greeting: "స్వాగతం,",
       villageInfo: "గ్రామ పంచాయతీ: కొత్తచెరువు",
       newReport: "సమస్యను నివేదించండి",
-      newReportSub: "వాయిస్ సహాయకుడిని ఉపయోగించండి",
+      newReportSub: "ఫిర్యాదు ఫారమ్‌ను పూరించండి",
       track: "ఫిర్యాదును ట్రాక్ చేయండి",
       trackSub: "పురోగతి టైమ్‌లైన్ చూడండి",
       history: "నా ఫిర్యాదులు",
@@ -124,7 +125,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
     greeting: "Welcome,",
     villageInfo: "Village Panchayat: Kothacheruvu",
     newReport: "Report Grievance",
-    newReportSub: "Use voice assistant",
+    newReportSub: "Fill out grievance form",
     track: "Track Grievance",
     trackSub: "View progress timeline",
     history: "My Grievances",
@@ -172,11 +173,12 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
     if (!user?.village && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const closest = findClosestVillage(pos.coords.latitude, pos.coords.longitude);
+          const closestResult = findClosestVillage(pos.coords.latitude, pos.coords.longitude);
+          const closest = closestResult.name;
           setSelectedVillage(closest);
           showToast(
             language === 'Telugu'
-              ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : 'పెదపెంకి'}`
+              ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : closest === 'Pedapenki' ? 'పెదపెంకి' : 'దువ్వాడ'}`
               : `Automatically loaded directory for nearest village: ${closest}`
           );
         },
@@ -193,13 +195,70 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
     }
     showToast(language === 'Telugu' ? 'మీ స్థానాన్ని గుర్తిస్తున్నాము...' : 'Detecting your location...');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
-        const closest = findClosestVillage(latitude, longitude);
+        const closestResult = findClosestVillage(latitude, longitude);
+        const closest = closestResult.name;
+        const distance = closestResult.distance;
+        
+        // If within 0.3 degrees (~30km) of a predefined village, directly use the predefined village
+        if (distance < 0.3) {
+          setSelectedVillage(closest);
+          showToast(
+            language === 'Telugu'
+              ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : closest === 'Pedapenki' ? 'పెదపెంకి' : 'దువ్వాడ'}`
+              : `Detected Location: ${closest}`
+          );
+          return;
+        }
+
+        try {
+          // Attempt to reverse geocode using OpenStreetMap Nominatim API
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`, {
+            headers: {
+              'Accept-Language': language === 'Telugu' ? 'te,en' : 'en'
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            
+            // Extract location parts
+            const villageName = addr.village || addr.suburb || addr.town || addr.neighbourhood || addr.hamlet || addr.city || addr.road || '';
+            const mandalName = addr.county || addr.subdistrict || addr.municipality || '';
+            let districtName = addr.state_district || addr.district || '';
+            
+            if (districtName) {
+              const cleanDist = districtName.replace(/\s+District$/i, '').trim();
+              const matchedDist = AP_DISTRICTS.find(d => d.toLowerCase() === cleanDist.toLowerCase() || cleanDist.toLowerCase().includes(d.toLowerCase()));
+              if (matchedDist) {
+                districtName = matchedDist;
+              }
+            }
+            
+            if (villageName) {
+              setSelectedVillage('Other');
+              setCustomVillage(villageName);
+              if (mandalName) setCustomMandal(mandalName);
+              if (districtName) setCustomDistrict(districtName);
+              
+              showToast(
+                language === 'Telugu'
+                  ? `స్థానం గుర్తించబడింది: ${villageName}`
+                  : `Location detected: ${villageName}`
+              );
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed, falling back to closest predefined village:", err);
+        }
+        
+        // Fallback to closest predefined village
         setSelectedVillage(closest);
         showToast(
           language === 'Telugu'
-            ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : 'పెదపెంకి'}`
+            ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : closest === 'Pedapenki' ? 'పెదపెంకి' : 'దువ్వాడ'}`
             : `Detected Location: ${closest}`
         );
       },
@@ -207,7 +266,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
         console.error("Location detection failed:", err);
         showToast(language === 'Telugu' ? 'లొకేషన్ గుర్తించడం వీలుపడలేదు' : 'Failed to retrieve GPS location');
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
@@ -414,7 +473,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
         /* TAB 1: GRIEVANCES & DASHBOARD */
         <div>
           {/* Main Core Actions Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '28px' }}>
             
             {/* REPORT GRIEVANCE - BIG BUTTON */}
             <div 
@@ -423,17 +482,35 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                padding: '24px', 
+                padding: '28px 24px', 
                 cursor: 'pointer', 
-                borderLeft: '5px solid var(--success)',
+                background: 'linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%)',
+                border: 'none',
+                color: '#FFFFFF',
+                borderRadius: '20px',
                 gap: '20px',
-                marginBottom: '0'
+                marginBottom: '0',
+                boxShadow: '0 12px 24px -6px rgba(79, 70, 229, 0.35)',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.boxShadow = '0 18px 30px -6px rgba(79, 70, 229, 0.45)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(79, 70, 229, 0.35)';
               }}
             >
-              <div style={{ fontSize: '32px', background: 'rgba(34, 197, 94, 0.08)', padding: '14px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎙️</div>
-              <div style={{ textAlign: 'left' }}>
-                <h3 style={{ fontSize: '17px', color: 'var(--text-primary)' }}>{t.newReport}</h3>
-                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: '500' }}>{t.newReportSub}</p>
+              {/* Subtle glass blob in background */}
+              <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.12)', pointerEvents: 'none' }} />
+              
+              <div style={{ fontSize: '32px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', padding: '14px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>📝</div>
+              <div style={{ textAlign: 'left', zIndex: 2 }}>
+                <h3 style={{ fontSize: '18px', color: '#FFFFFF', fontWeight: '800' }}>{t.newReport}</h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', marginTop: '4px', fontWeight: '500' }}>{t.newReportSub}</p>
               </div>
             </div>
 
@@ -444,17 +521,35 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                padding: '24px', 
+                padding: '28px 24px', 
                 cursor: 'pointer', 
-                borderLeft: '5px solid var(--primary)',
+                background: 'linear-gradient(135deg, #0EA5E9 0%, #10B981 100%)',
+                border: 'none',
+                color: '#FFFFFF',
+                borderRadius: '20px',
                 gap: '20px',
-                marginBottom: '0'
+                marginBottom: '0',
+                boxShadow: '0 12px 24px -6px rgba(14, 165, 233, 0.35)',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.boxShadow = '0 18px 30px -6px rgba(14, 165, 233, 0.45)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(14, 165, 233, 0.35)';
               }}
             >
-              <div style={{ fontSize: '32px', background: 'rgba(37, 99, 235, 0.08)', padding: '14px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📋</div>
-              <div style={{ textAlign: 'left' }}>
-                <h3 style={{ fontSize: '17px', color: 'var(--text-primary)' }}>{t.history}</h3>
-                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: '500' }}>{t.historySub}</p>
+              {/* Subtle glass blob in background */}
+              <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.12)', pointerEvents: 'none' }} />
+              
+              <div style={{ fontSize: '32px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', padding: '14px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>📋</div>
+              <div style={{ textAlign: 'left', zIndex: 2 }}>
+                <h3 style={{ fontSize: '18px', color: '#FFFFFF', fontWeight: '800' }}>{t.history}</h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', marginTop: '4px', fontWeight: '500' }}>{t.historySub}</p>
               </div>
             </div>
           </div>
@@ -465,17 +560,53 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
               📊 {t.summaryTitle}
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              <div style={{ background: 'var(--hover-bg)', padding: '16px 8px', borderRadius: '14px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.submitted}</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', marginTop: '6px', color: 'var(--text-primary)' }}>{counts.submitted}</div>
+              
+              {/* SUBMITTED */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', 
+                padding: '20px 8px', 
+                borderRadius: '16px', 
+                textAlign: 'center', 
+                boxShadow: '0 8px 20px -6px rgba(37, 99, 235, 0.4)',
+                border: 'none',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: '-30px', left: '-30px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)' }} />
+                <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.8px', zIndex: 2, position: 'relative' }}>{t.submitted}</div>
+                <div style={{ fontSize: '36px', fontWeight: '900', marginTop: '6px', color: '#FFFFFF', zIndex: 2, position: 'relative', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{counts.submitted}</div>
               </div>
-              <div style={{ background: 'var(--hover-bg)', padding: '16px 8px', borderRadius: '14px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '800', color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.inProgress}</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', marginTop: '6px', color: 'var(--text-primary)' }}>{counts.inProgress}</div>
+
+              {/* IN PROGRESS */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', 
+                padding: '20px 8px', 
+                borderRadius: '16px', 
+                textAlign: 'center', 
+                boxShadow: '0 8px 20px -6px rgba(245, 158, 11, 0.4)',
+                border: 'none',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: '-30px', left: '-30px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)' }} />
+                <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.8px', zIndex: 2, position: 'relative' }}>{t.inProgress}</div>
+                <div style={{ fontSize: '36px', fontWeight: '900', marginTop: '6px', color: '#FFFFFF', zIndex: 2, position: 'relative', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{counts.inProgress}</div>
               </div>
-              <div style={{ background: 'var(--hover-bg)', padding: '16px 8px', borderRadius: '14px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.resolved}</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', marginTop: '6px', color: 'var(--text-primary)' }}>{counts.resolved}</div>
+
+              {/* RESOLVED */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', 
+                padding: '20px 8px', 
+                borderRadius: '16px', 
+                textAlign: 'center', 
+                boxShadow: '0 8px 20px -6px rgba(16, 185, 129, 0.4)',
+                border: 'none',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: '-30px', left: '-30px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)' }} />
+                <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.8px', zIndex: 2, position: 'relative' }}>{t.resolved}</div>
+                <div style={{ fontSize: '36px', fontWeight: '900', marginTop: '6px', color: '#FFFFFF', zIndex: 2, position: 'relative', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{counts.resolved}</div>
               </div>
             </div>
           </div>
@@ -499,32 +630,53 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {complaints.slice(0, 3).map((c) => (
-                  <div 
-                    key={c.id} 
-                    className="card-interactive"
-                    onClick={() => handleTrackClick(c.id)}
-                    style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
-                      padding: '16px 20px', 
-                      border: '1px solid var(--border-color)', 
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      background: 'var(--surface-color)',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '800', fontSize: '14.5px', color: 'var(--text-primary)' }}>{c.id}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: '600' }}>📍 {c.village_area} • {c.complaint_category}</div>
+                {complaints.slice(0, 3).map((c) => {
+                  const borderColors = {
+                    'Submitted': '4px solid #3B82F6',
+                    'Assigned': '4px solid #8B5CF6',
+                    'In Progress': '4px solid #F59E0B',
+                    'Resolved': '4px solid #10B981'
+                  };
+                  return (
+                    <div 
+                      key={c.id} 
+                      className="card-interactive"
+                      onClick={() => handleTrackClick(c.id)}
+                      style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        padding: '16px 20px', 
+                        borderLeft: borderColors[c.status] || '4px solid var(--border-color)', 
+                        borderTop: '1px solid var(--border-color)',
+                        borderRight: '1px solid var(--border-color)',
+                        borderBottom: '1px solid var(--border-color)',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        background: 'var(--surface-color)',
+                        textAlign: 'left',
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 2px 8px var(--shadow-color)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                        e.currentTarget.style.boxShadow = '0 6px 12px var(--shadow-color)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = '0 2px 8px var(--shadow-color)';
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '14.5px', color: 'var(--text-primary)' }}>{c.id}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: '600' }}>📍 {c.village_area} • {c.complaint_category}</div>
+                      </div>
+                      <span className={`status-pill ${getStatusClass(c.status)}`} style={{ fontSize: '11px', padding: '4px 10px' }}>
+                        {c.status}
+                      </span>
                     </div>
-                    <span className={`status-pill ${getStatusClass(c.status)}`} style={{ fontSize: '11px', padding: '4px 10px' }}>
-                      {c.status}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -569,6 +721,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                   <option value="Bukkarayasamudram">Bukkarayasamudram (బుక్కరాయసముద్రం)</option>
                   <option value="Rapthadu">Rapthadu (రాప్తాడు)</option>
                   <option value="Pedapenki">Pedapenki (పెదపెంకి)</option>
+                  <option value="Duvvada">Duvvada (దువ్వాడ)</option>
                   <option value="Other">{language === 'Telugu' ? 'ఇతర గ్రామం / ప్రాంతం' : 'Other / Select Any Location'}</option>
                 </select>
 

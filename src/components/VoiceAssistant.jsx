@@ -1,38 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-const textToDigits = (text) => {
-  const wordsMap = {
-    'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
-    'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
-    'సున్నా': '0', 'ఒకటి': '1', 'రెండు': '2', 'మూడు': '3', 'నాలుగు': '4',
-    'ఐదు': '5', 'ఆరు': '6', 'ఏడు': '7', 'ఎనిమిది': '8', 'తొమ్మిది': '9',
-  };
-  let cleanText = text.toLowerCase().trim();
-  for (const [word, digit] of Object.entries(wordsMap)) {
-    cleanText = cleanText.replace(new RegExp(word, 'g'), digit);
-  }
-  return cleanText.replace(/\D/g, '');
-};
-
-const matchCategoryByVoice = (speechText) => {
-  const text = speechText.toLowerCase().trim();
-  const mappings = {
-    'Roads': ['road', 'roads', 'path', 'pothole', 'potholes', 'street', 'highway', 'రహదారులు', 'రోడ్లు', 'రోడ్డు', 'గుంతలు'],
-    'Streetlights': ['light', 'lights', 'streetlight', 'streetlights', 'lamp', 'lamps', 'electricity', 'power', 'dark', 'వీధి దీపాలు', 'లైట్లు', 'కరెంట్', 'దీపం', 'చీకటి'],
-    'Water Supply': ['water', 'drinking water', 'leak', 'tap', 'supply', 'pipe', 'leakage', 'నీరు', 'నీటి సరఫరా', 'మంచినీరు', 'పైప్', 'లీకేజీ'],
-    'Drainage': ['drain', 'drainage', 'sewer', 'gutter', 'clog', 'dirty water', 'మురుగు', 'కాలువ', 'డ్రైనేజీ'],
-    'Sanitation': ['garbage', 'waste', 'trash', 'dustbin', 'cleaning', 'sanitation', 'sweep', 'చెత్త', 'పారిశుధ్యం', 'శుభ్రం'],
-    'Public Facilities': ['public', 'school', 'park', 'community', 'library', 'building', 'ప్రజా సౌకర్యాలు', 'బడి', 'పాఠశాల', 'పార్క్'],
-    'Other': ['other', 'general', 'complaint', 'government', 'service', 'ఇతర', 'సాధారణ', 'సమస్య'],
-  };
-  for (const [category, keywords] of Object.entries(mappings)) {
-    if (keywords.some(kw => text.includes(kw))) return category;
-  }
-  return null;
-};
-
+// AP Villages list for datalist autocomplete
 const AP_VILLAGES = [
   { en: 'Kothacheruvu', te: 'కొత్తచెరువు' }, { en: 'Bukkarayasamudram', te: 'బుక్కరాయసముద్రం' },
   { en: 'Rapthadu', te: 'రాప్తాడు' }, { en: 'Pedapenki', te: 'పెదపెంకి' },
@@ -62,73 +30,57 @@ const AP_VILLAGES = [
   { en: 'Kavali', te: 'కావలి' }, { en: 'Gudur', te: 'గూడూరు' },
 ];
 
-// ─── Component ───────────────────────────────────────────────────────────────
+const VILLAGE_COORDINATES = {
+  'Kothacheruvu': { lat: 14.2016, lng: 77.7818, te: 'కొత్తచెరువు' },
+  'Bukkarayasamudram': { lat: 14.7082, lng: 77.6417, te: 'బుక్కరాయసముద్రం' },
+  'Rapthadu': { lat: 14.6200, lng: 77.6080, te: 'రాప్తాడు' },
+  'Pedapenki': { lat: 18.5284, lng: 83.2982, te: 'పెదపెంకి' },
+  'Duvvada': { lat: 17.6997, lng: 83.1575, te: 'దువ్వాడ' }
+};
 
-export default function VoiceAssistant({ language, user, onCompleteStep, onSubmissionComplete, onCancel, showToast, changeLanguage }) {
-  const [currentStep, setCurrentStep] = useState(1);
+const findClosestVillageName = (latitude, longitude, isTelugu) => {
+  let closest = 'Kothacheruvu';
+  let closestTe = 'కొత్తచెరువు';
+  let minDistance = Infinity;
+  for (const [name, coords] of Object.entries(VILLAGE_COORDINATES)) {
+    const dist = Math.hypot(coords.lat - latitude, coords.lng - longitude);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closest = name;
+      closestTe = coords.te;
+    }
+  }
+  return isTelugu ? closestTe : closest;
+};
 
-  // Speech recognition state
-  const [isListening, setIsListening]   = useState(false);
-  const [interimText, setInterimText]   = useState('');   // live interim transcript
-  const [micStatus, setMicStatus]       = useState('checking');
-  const [isOffline, setIsOffline]       = useState(!navigator.onLine);
+export default function VoiceAssistant({ language, user, onSubmissionComplete, onCancel, showToast, changeLanguage }) {
+  const isTelugu = language === 'Telugu';
 
-  // Geolocation
-  const [coords, setCoords] = useState({ latitude: 14.6819, longitude: 77.6006 });
+  // Multi-step form state
+  const [formStep, setFormStep] = useState(1);
 
-  // Form data
+  // Form State
   const [formData, setFormData] = useState(() => {
-    const saved = localStorage.getItem('sachivalayam_voice_draft');
+    const saved = localStorage.getItem('sachivalayam_form_draft');
     if (saved) { try { return JSON.parse(saved); } catch (e) {} }
     return { name: user?.name || '', phone: user?.phone || '', village: user?.village || '', category: '', description: '' };
   });
 
-  const [audioBlob, setAudioBlob]       = useState(null);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [volume, setVolume]             = useState(0);
-  const [logs, setLogs]                 = useState([]);
+  // Geolocation state
+  const [coords, setCoords] = useState({ latitude: 14.6819, longitude: 77.6006 });
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('idle'); // idle, locating, success, error
+
+  // Camera & Photo attachment state
+  const [photoBlob, setPhotoBlob] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Refs
-  const recognitionRef     = useRef(null);   // SpeechRecognition instance
-  const isListeningRef     = useRef(false);
-  const userStoppedRef     = useRef(false);
-  const committedRef       = useRef('');     // accumulated final transcript for this step
-  const currentStepRef     = useRef(1);
-  const formDataRef        = useRef(formData);
-  const languageRef        = useRef(language);
-  const synthesisRef       = useRef(window.speechSynthesis);
-  const currentUtterRef    = useRef(null);
-  const timerRef           = useRef(null);
-  const volumeAnimRef      = useRef(null);
-  const mediaStreamRef     = useRef(null);
-  const analyserRef        = useRef(null);
-
-  // Keep refs in sync
-  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
-  useEffect(() => { formDataRef.current = formData; },     [formData]);
-  useEffect(() => { languageRef.current = language; },     [language]);
-
-  const isTelugu = language === 'Telugu';
-
-  const QUESTIONS = {
-    1: isTelugu ? 'మీ పేరు ఏమిటి?' : 'What is your name?',
-    2: isTelugu ? 'మీ పది అంకెల మొబైల్ సంఖ్య ఏమిటి?' : 'What is your 10-digit mobile number?',
-    3: isTelugu ? 'మీరు ఏ గ్రామం లేదా ప్రాంతం నుండి వచ్చారు?' : 'Which village or area are you from?',
-    4: isTelugu ? 'సమస్య వర్గం ఏమిటి? రోడ్లు, వీధిదీపాలు, నీటి సరఫరా, మురుగు, పారిశుధ్యం, ప్రజా సౌకర్యాలు, లేదా ఇతర?' : 'What type of problem? Roads, streetlights, water supply, drainage, sanitation, public facilities, or other?',
-    5: isTelugu ? 'మీ సమస్యను వివరంగా చెప్పండి.' : 'Please describe your complaint in detail.',
-    6: isTelugu ? 'దయచేసి మీ ఫిర్యాదు వివరాలను నిర్ధారించండి.' : 'Please confirm your complaint details.',
-    7: isTelugu ? 'ఫిర్యాదు సమర్పించబడుతోంది...' : 'Submitting your complaint...',
-  };
-
-  const LABELS = {
-    1: isTelugu ? 'మీ పేరు:' : 'Your Name:',
-    2: isTelugu ? 'మొబైల్ సంఖ్య:' : 'Phone Number:',
-    3: isTelugu ? 'గ్రామం / ప్రాంతం:' : 'Village / Area:',
-    4: isTelugu ? 'సమస్య వర్గం:' : 'Complaint Category:',
-    5: isTelugu ? 'వివరణ:' : 'Description:',
-    6: isTelugu ? 'నిర్ధారణ:' : 'Confirmation:',
-  };
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
 
   const categories = [
     { en: 'Roads',             te: 'రోడ్లు',              icon: '🛣️' },
@@ -140,398 +92,292 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
     { en: 'Other',             te: 'ఇతర సమస్యలు',          icon: '❓' },
   ];
 
-  const stepColors = ['#2563EB', '#10B981', '#14B8A6', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1'];
-  const stepIcons  = ['👤', '📞', '📍', '📋', '✍️', '🔍', '🚀'];
-
-  // ─── Logging ─────────────────────────────────────────────────────────────
-  const addLog = (msg) => {
-    const time = new Date().toLocaleTimeString();
-    setLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 19)]);
-    fetch('/api/client-logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg, level: 'INFO' }),
-    }).catch(() => {});
-  };
+  const t = {
+    English: {
+      title: "Grievance Registration",
+      subtitle: "Submit details of your local secretariat complaint below",
+      nameLabel: "👤 Resident Name",
+      namePlaceholder: "Enter your full name",
+      phoneLabel: "📞 Mobile Number",
+      phonePlaceholder: "Enter 10-digit mobile number",
+      villageLabel: "📍 Village / Area",
+      villagePlaceholder: "Enter your village or area name",
+      categoryLabel: "📋 Complaint Category",
+      categorySelect: "-- Select Category --",
+      descriptionLabel: "✍️ Complaint Description",
+      descriptionPlaceholder: "Describe your problem in detail here...",
+      gpsTitle: "🛰️ Geotagging Status",
+      gpsSuccess: "GPS coordinates captured successfully",
+      gpsLoading: "Acquiring current location details...",
+      gpsErr: "GPS location access failed.",
+      evidenceTitle: "📷 Evidence Photo",
+      evidenceSubtitle: "Capture or select a photo of the problem",
+      startCam: "Open Camera",
+      takePhoto: "Capture Image",
+      retake: "Retake Photo",
+      uploadFallback: "Or select an image file from storage:",
+      submit: "Submit Grievance Details",
+      submitting: "Submitting Grievance...",
+      cancel: "Cancel",
+      detectLocBtn: "Get Current Location",
+      detectingLocBtn: "Detecting Location...",
+      requiredName: "Please enter your name",
+      requiredPhone: "Please enter a valid 10-digit phone number",
+      requiredVillage: "Please enter your village / area",
+      requiredCategory: "Please select a category",
+      requiredDescription: "Please describe your complaint",
+    },
+    Telugu: {
+      title: "ఫిర్యాదు నమోదు",
+      subtitle: "మీ సమస్య వివరాలను సచివాలయానికి దిగువన సమర్పించండి",
+      nameLabel: "👤 నివాసి పేరు",
+      namePlaceholder: "మీ పూర్తి పేరు టైప్ చేయండి",
+      phoneLabel: "📞 మొబైల్ సంఖ్య",
+      phonePlaceholder: "పది అంకెల మొబైల్ సంఖ్య",
+      villageLabel: "📍 గ్రామం / ప్రాంతం",
+      villagePlaceholder: "మీ గ్రామం లేదా ప్రాంతం పేరు",
+      categoryLabel: "📋 సమస్య వర్గం",
+      categorySelect: "-- వర్గాన్ని ఎంచుకోండి --",
+      descriptionLabel: "✍️ సమస్య వివరణ",
+      descriptionPlaceholder: "సమస్యను వివరంగా ఇక్కడ టైప్ చేయండి...",
+      gpsTitle: "🛰️ జియో-ట్యాగింగ్ స్థితి",
+      gpsSuccess: "GPS స్థానాన్ని విజయవంతంగా పొందాము",
+      gpsLoading: "లొకేషన్‌ని గుర్తిస్తున్నాము...",
+      gpsErr: "GPS లొకేషన్ నిరాకరించబడింది.",
+      evidenceTitle: "📷 రుజువు ఫోటో",
+      evidenceSubtitle: "సమస్య యొక్క ఫోటో తీయండి లేదా ఎంచుకోండి",
+      startCam: "కెమెరాను ఆన్ చేయి",
+      takePhoto: "ఫొటో తీయి",
+      retake: "మరో ఫొటో తీయి",
+      uploadFallback: "లేదా మీ డివైస్ నుండి ఫోటో ఫైల్‌ను ఎంచుకోండి:",
+      submit: "వివరాలను సమర్పించండి",
+      submitting: "సమర్పిస్తున్నాము...",
+      cancel: "రద్దు చేయి",
+      detectLocBtn: "స్థానాన్ని గుర్తించు",
+      detectingLocBtn: "గుర్తిస్తోంది...",
+      requiredName: "దయచేసి పేరు టైప్ చేయండి",
+      requiredPhone: "దయచేసి సరైన పది అంకెల మొబైల్ సంఖ్యను టైప్ చేయండి",
+      requiredVillage: "దయచేసి గ్రామం టైప్ చేయండి",
+      requiredCategory: "దయచేసి వర్గాన్ని ఎంచుకోండి",
+      requiredDescription: "దయచేసి వివరణ టైప్ చేయండి",
+    }
+  }[language] || t.English;
 
   // Auto-save draft
   useEffect(() => {
-    localStorage.setItem('sachivalayam_voice_draft', JSON.stringify(formData));
+    localStorage.setItem('sachivalayam_form_draft', JSON.stringify(formData));
   }, [formData]);
 
-  // Online/offline handler
+  // Geolocation on load
   useEffect(() => {
-    const goOnline  = () => { setIsOffline(false); addLog('Device online.'); };
-    const goOffline = () => { setIsOffline(true);  stopListening(); addLog('Device offline.'); };
-    window.addEventListener('online',  goOnline);
-    window.addEventListener('offline', goOffline);
-    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
-  }, []);
-
-  // Recording timer
-  useEffect(() => {
-    if (isListening) {
-      timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
-    } else {
-      clearInterval(timerRef.current);
-      setRecordingSeconds(0);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isListening]);
-
-  // Geolocation
-  useEffect(() => {
+    setLocationStatus('locating');
     navigator.geolocation?.getCurrentPosition(
-      pos => setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-      ()  => setCoords({ latitude: 14.6819, longitude: 77.6006 }),
-      { enableHighAccuracy: true }
+      pos => {
+        setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setLocationStatus('success');
+      },
+      ()  => {
+        setCoords({ latitude: 14.6819, longitude: 77.6006 });
+        setLocationStatus('error');
+      },
+      { enableHighAccuracy: true, timeout: 6000 }
     );
   }, []);
 
-  // ─── Startup diagnostic ──────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      addLog('Running startup diagnostics...');
-      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRec) {
-        setMicStatus('no-browser');
-        addLog('Browser does not support SpeechRecognition API');
-        return;
-      }
-      if (!navigator.onLine) { setMicStatus('ready'); setIsOffline(true); return; }
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-        s.getTracks().forEach(t => t.stop());
-        setMicStatus('ready');
-        addLog('Microphone permission granted. SpeechRecognition ready.');
-      } catch {
-        setMicStatus('no-permission');
-        addLog('Microphone permission denied.');
-      }
-    })();
-  }, []);
-
-  // ─── Volume visualiser via AnalyserNode ─────────────────────────────────
-  const startVolumeMonitor = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteFrequencyData(data);
-        const avg = data.reduce((a, b) => a + b, 0) / data.length;
-        setVolume(Math.min(100, Math.round(avg * 2)));
-        volumeAnimRef.current = requestAnimationFrame(tick);
-      };
-      tick();
-    } catch { /* silent */ }
-  };
-
-  const stopVolumeMonitor = () => {
-    cancelAnimationFrame(volumeAnimRef.current);
-    mediaStreamRef.current?.getTracks().forEach(t => t.stop());
-    setVolume(0);
-  };
-
-  // ─── Create & wire SpeechRecognition instance ────────────────────────────
-  const buildRecognition = (lang) => {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRec) return null;
-
-    const rec = new SpeechRec();
-    rec.lang              = lang === 'Telugu' ? 'te-IN' : 'en-IN';
-    rec.continuous        = true;
-    rec.interimResults    = true;
-    rec.maxAlternatives   = 1;
-
-    rec.onstart = () => {
-      addLog(`SpeechRecognition started [${rec.lang}]`);
-      setIsListening(true);
-      isListeningRef.current = true;
-    };
-
-    rec.onerror = (e) => {
-      addLog(`SpeechRecognition error: ${e.error}`);
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        setMicStatus('no-permission');
-        stopListening();
-      } else if (e.error === 'network') {
-        setMicStatus('no-internet');
-      }
-      // For 'no-speech', 'audio-capture' etc we just let onend restart
-    };
-
-    rec.onend = () => {
-      addLog('SpeechRecognition ended.');
-      setInterimText('');
-      // Auto-restart unless user deliberately stopped
-      if (!userStoppedRef.current && isListeningRef.current) {
-        addLog('Auto-restarting recognition...');
-        setTimeout(() => {
-          try { recognitionRef.current?.start(); } catch { /* already started */ }
-        }, 150);
-      } else {
-        setIsListening(false);
-        isListeningRef.current = false;
-        stopVolumeMonitor();
-      }
-    };
-
-    rec.onresult = (event) => {
-      let interim = '';
-      let newFinal = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          newFinal += transcript + ' ';
-        } else {
-          interim += transcript;
-        }
-      }
-
-      if (interim) setInterimText(interim);
-
-      if (newFinal.trim()) {
-        const fullText = (committedRef.current + ' ' + newFinal).trim();
-        committedRef.current = fullText;
-        setInterimText('');
-        addLog(`Transcript: "${fullText}"`);
-        applyTranscript(fullText);
-      }
-    };
-
-    return rec;
-  };
-
-  // ─── Apply transcript to current step field ──────────────────────────────
-  const applyTranscript = (text) => {
-    const step = currentStepRef.current;
-    const cleanText = text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '').trim();
-
-    // Navigation commands
-    const isNext   = ['go next step', 'next step', 'go next', 'తరువాత దశ', 'తదుపరి'].includes(cleanText);
-    const isBack   = ['go back', 'వెనుకకు వెళ్ళు'].includes(cleanText);
-    const isCancel = ['cancel complaint', 'రద్దు చేయి'].includes(cleanText);
-    const isSubmit = ['submit complaint', 'ముందుకు వెళ్ళు', 'yes', 'అవును'].includes(cleanText);
-
-    if (isNext   && step < 6)  { addLog('Command: NEXT');   stopListening(); goNextRef.current?.(); return; }
-    if (isBack   && step > 1)  { addLog('Command: BACK');   stopListening(); goPrevRef.current?.(); return; }
-    if (isCancel)               { addLog('Command: CANCEL'); stopListening(); onCancel(); return; }
-    if (isSubmit && step === 6) { addLog('Command: SUBMIT'); stopListening(); submitComplaintRef.current?.(); return; }
-
-    // Populate field
-    setFormData(prev => {
-      const u = { ...prev };
-      if (step === 1) u.name        = text.trim();
-      if (step === 2) u.phone       = textToDigits(text);
-      if (step === 3) u.village     = text.trim();
-      if (step === 5) u.description = text.trim();
-      return u;
-    });
-
-    // Category matching
-    if (step === 4) {
-      const matched = matchCategoryByVoice(text);
-      if (matched) {
-        addLog(`Category matched: ${matched}`);
-        setFormData(prev => ({ ...prev, category: matched }));
-      }
-    }
-  };
-
-  // Stable ref wrappers so onresult can call goNext/goPrev/submit without stale closure
-  const goNextRef         = useRef(null);
-  const goPrevRef         = useRef(null);
-  const submitComplaintRef = useRef(null);
-
-  // ─── Start listening ─────────────────────────────────────────────────────
-  const startListening = async () => {
-    if (isOffline) return;
-    userStoppedRef.current = false;
-    committedRef.current   = '';
-    setInterimText('');
-
-    // Stop any existing instance first
-    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-
-    const rec = buildRecognition(languageRef.current);
-    if (!rec) { setMicStatus('no-browser'); return; }
-
-    recognitionRef.current = rec;
-    isListeningRef.current  = true;
-
-    try {
-      rec.start();
-      await startVolumeMonitor();
-    } catch (err) {
-      addLog(`Failed to start SpeechRecognition: ${err.message}`);
-      setMicStatus('no-permission');
-      isListeningRef.current = false;
-      setIsListening(false);
-    }
-  };
-
-  // ─── Stop listening ──────────────────────────────────────────────────────
-  const stopListening = () => {
-    userStoppedRef.current  = true;
-    isListeningRef.current  = false;
-    setIsListening(false);
-    setInterimText('');
-    stopVolumeMonitor();
-    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-  };
-
-  // Cleanup on unmount
+  // Cleanup camera stream
   useEffect(() => {
     return () => {
-      stopListening();
-      synthesisRef.current?.cancel();
+      stopCamera();
     };
   }, []);
 
-  // ─── Speak question then auto-start mic ──────────────────────────────────
+  // Bind camera stream to video element when camera becomes active
   useEffect(() => {
-    if (micStatus !== 'ready' || isOffline) return;
-
-    stopListening();
-    synthesisRef.current?.cancel();
-
-    let text = QUESTIONS[currentStep];
-    if (currentStep === 6) {
-      text = isTelugu
-        ? `దయచేసి మీ ఫిర్యాదు వివరాలను నిర్ధారించండి. పేరు: ${formData.name}. ఫోన్: ${formData.phone}. గ్రామం: ${formData.village}. వర్గం: ${formData.category}. వివరణ: ${formData.description}. సరైనదేనా?`
-        : `Please confirm. Name: ${formData.name}. Phone: ${formData.phone}. Village: ${formData.village}. Category: ${formData.category}. Description: ${formData.description}. Say yes to submit or no to restart.`;
+    if (cameraActive && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      // Explicitly trigger play to handle autoplay policy in browser sandbox
+      video.play().catch(err => {
+        console.warn("Autoplay was blocked or interrupted:", err);
+      });
     }
+  }, [cameraActive]);
 
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang  = isTelugu ? 'te-IN' : 'en-US';
-    currentUtterRef.current = utt;
-
-    const afterSpeak = () => {
-      currentUtterRef.current = null;
-      setTimeout(() => startListening(), 400);
-    };
-
-    utt.onend   = afterSpeak;
-    utt.onerror = afterSpeak;
-
-    // Safety fallback if speech synthesis hangs
-    const fallback = setTimeout(() => {
-      synthesisRef.current?.cancel();
-      afterSpeak();
-    }, 9000);
-
-    synthesisRef.current?.speak(utt);
-
-    return () => {
-      clearTimeout(fallback);
-      synthesisRef.current?.cancel();
-      stopListening();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, micStatus, isOffline]);
-
-  // Reset committedRef on step change
-  useEffect(() => {
-    committedRef.current = '';
-    setInterimText('');
-  }, [currentStep]);
-
-  // ─── Controls ───────────────────────────────────────────────────────────
-  const handleStartResume = async () => {
-    if (isOffline) return;
-    if (micStatus === 'no-permission' || micStatus === 'checking') {
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-        s.getTracks().forEach(t => t.stop());
-        setMicStatus('ready');
-        synthesisRef.current?.cancel();
-        setTimeout(() => startListening(), 100);
-      } catch {
-        setMicStatus('no-permission');
-        showToast(isTelugu ? 'మైక్రోఫోన్ అనుమతి నిరాకరించబడింది.' : 'Microphone permission denied.');
-      }
+  const detectLocation = () => {
+    setIsDetectingLocation(true);
+    setLocationStatus('locating');
+    if (!navigator.geolocation) {
+      showToast(isTelugu ? 'మీ బ్రౌజర్ జిపిఎస్ ను సమర్ధించదు' : 'Geolocation is not supported by your browser');
+      setIsDetectingLocation(false);
+      setLocationStatus('error');
       return;
     }
-    synthesisRef.current?.cancel();
-    startListening();
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setCoords({ latitude: lat, longitude: lon });
+        setLocationStatus('success');
+
+        // Check proximity to predefined villages
+        const closestResultName = findClosestVillageName(lat, lon, false); // English name for matching distance
+        const coordsPredefined = VILLAGE_COORDINATES[closestResultName];
+        const distance = Math.hypot(coordsPredefined.lat - lat, coordsPredefined.lng - lon);
+        
+        // If close (~30km), use predefined name (translating to Telugu if needed)
+        if (distance < 0.3) {
+          const resolvedName = isTelugu ? coordsPredefined.te : closestResultName;
+          setFormData(prev => ({ ...prev, village: resolvedName }));
+          showToast(isTelugu ? `స్థానం గుర్తించబడింది: ${resolvedName}` : `Location resolved: ${resolvedName}`);
+          setIsDetectingLocation(false);
+          return;
+        }
+
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
+            headers: { 'Accept-Language': isTelugu ? 'te,en' : 'en' }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            const placeName = addr.village || addr.suburb || addr.town || addr.neighbourhood || addr.hamlet || addr.city || addr.road || '';
+            const county = addr.county || '';
+            let resolvedName = placeName;
+            
+            if (county && placeName && !placeName.includes(county)) {
+              resolvedName = `${placeName}, ${county}`;
+            } else if (!resolvedName) {
+              resolvedName = data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : '';
+            }
+
+            if (resolvedName) {
+              setFormData(prev => ({ ...prev, village: resolvedName }));
+              showToast(isTelugu ? `స్థానం గుర్తించబడింది: ${resolvedName}` : `Location resolved: ${resolvedName}`);
+            } else {
+              const fallbackVillage = findClosestVillageName(lat, lon, isTelugu);
+              setFormData(prev => ({ ...prev, village: fallbackVillage }));
+              showToast(isTelugu ? `స్థానం గుర్తించబడింది: ${fallbackVillage}` : `Location resolved: ${fallbackVillage}`);
+            }
+          } else {
+            const fallbackVillage = findClosestVillageName(lat, lon, isTelugu);
+            setFormData(prev => ({ ...prev, village: fallbackVillage }));
+            showToast(isTelugu ? `స్థానం గుర్తించబడింది: ${fallbackVillage}` : `Location resolved: ${fallbackVillage}`);
+          }
+        } catch (err) {
+          console.error("Reverse geocoding error:", err);
+          const fallbackVillage = findClosestVillageName(lat, lon, isTelugu);
+          setFormData(prev => ({ ...prev, village: fallbackVillage }));
+          showToast(isTelugu ? `స్థానం గుర్తించబడింది: ${fallbackVillage}` : `Location resolved: ${fallbackVillage}`);
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (error) => {
+        setIsDetectingLocation(false);
+        setLocationStatus('error');
+        let errorMsg = isTelugu ? 'స్థానాన్ని పొందడం విఫలమైంది.' : 'Failed to retrieve location.';
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMsg = isTelugu ? 'స్థాన అనుమతి నిరాకరించబడింది.' : 'Location permission denied.';
+        }
+        showToast(errorMsg);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
-  const handlePause = () => {
-    addLog('Pause clicked');
-    stopListening();
+  const startCamera = async () => {
+    try {
+      // Use ideal constraint to prefer back camera but fallback to laptop/front webcam gracefully
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: { ideal: 'environment' } } 
+      });
+      streamRef.current = stream;
+      setCameraActive(true);
+    } catch (err) {
+      console.warn("Could not open camera:", err);
+      showToast(isTelugu ? "కెమెరాను ఆన్ చేయడం కుదరలేదు" : "Could not open camera stream.");
+    }
   };
 
-  const handleStop = () => {
-    addLog('Stop clicked');
-    stopListening();
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
   };
 
-  const handleClear = () => {
-    addLog('Clear clicked');
-    committedRef.current = '';
-    setInterimText('');
-    setFormData(prev => {
-      const u = { ...prev };
-      if (currentStep === 1) u.name        = '';
-      if (currentStep === 2) u.phone       = '';
-      if (currentStep === 3) u.village     = '';
-      if (currentStep === 4) u.category    = '';
-      if (currentStep === 5) u.description = '';
-      return u;
-    });
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      // Ensure video is playing and has valid dimensions
+      if (video.videoWidth <= 0 || video.videoHeight <= 0) {
+        showToast(isTelugu ? "వీడియో స్ట్రీమ్ ఇంకా లోడ్ కాలేదు" : "Video stream not fully loaded yet.");
+        return;
+      }
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setPhotoBlob(blob);
+          setPhotoPreview(URL.createObjectURL(blob));
+        } else {
+          showToast(isTelugu ? "ఫొటోను క్యాప్చర్ చేయడం కుదరలేదు" : "Failed to capture photo.");
+        }
+        stopCamera();
+      }, 'image/jpeg', 0.8);
+    }
   };
 
-  const updateFieldManually = (fieldName, val) => {
-    setFormData(prev => ({ ...prev, [fieldName]: val }));
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhotoBlob(file);
+      setPhotoPreview(URL.createObjectURL(file));
+      stopCamera();
+    }
   };
 
-  const handleInputChange = (val) => {
-    const field = currentStep === 1 ? 'name' : currentStep === 2 ? 'phone' : currentStep === 3 ? 'village' : currentStep === 5 ? 'description' : '';
-    if (field) updateFieldManually(field, val);
+  const updateField = (field, val) => {
+    setFormData(prev => ({ ...prev, [field]: val }));
   };
 
-  // ─── Navigation ─────────────────────────────────────────────────────────
-  const goNext = () => {
-    if (currentStep === 1 && !formData.name.trim())                              { showToast(isTelugu ? 'దయచేసి మీ పేరు చెప్పండి' : 'Please say or type your name'); return; }
-    if (currentStep === 2 && (!formData.phone.trim() || formData.phone.length < 10)) { showToast(isTelugu ? 'పది అంకెల మొబైల్ సంఖ్య అవసరం' : 'Please enter a valid 10-digit phone number'); return; }
-    if (currentStep === 3 && !formData.village.trim())                           { showToast(isTelugu ? 'దయచేసి మీ గ్రామం చెప్పండి' : 'Please say or type your village'); return; }
-    if (currentStep === 4 && !formData.category)                                 { showToast(isTelugu ? 'వర్గాన్ని ఎంచుకోండి' : 'Please select a category'); return; }
-    if (currentStep === 5 && !formData.description.trim())                       { showToast(isTelugu ? 'సమస్య వివరణ అవసరం' : 'Please describe your complaint'); return; }
-    stopListening();
-    if (currentStep < 6) setCurrentStep(s => s + 1);
+  const handleNext = (currentStepNum) => {
+    if (currentStepNum === 1) {
+      if (!formData.name.trim()) return showToast(t.requiredName);
+      if (!formData.phone.trim() || formData.phone.length < 10) return showToast(t.requiredPhone);
+      setFormStep(2);
+    } else if (currentStepNum === 2) {
+      if (!formData.village.trim()) return showToast(t.requiredVillage);
+      if (!formData.category) return showToast(t.requiredCategory);
+      if (!formData.description.trim()) return showToast(t.requiredDescription);
+      setFormStep(3);
+    }
   };
-  goNextRef.current = goNext;
 
-  const goPrev = () => {
-    stopListening();
-    if (currentStep > 1) setCurrentStep(s => s - 1);
-  };
-  goPrevRef.current = goPrev;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (formStep !== 3) return;
 
-  // ─── Submit complaint ────────────────────────────────────────────────────
-  const submitComplaint = async () => {
     setIsSubmitting(true);
-    synthesisRef.current?.cancel();
-    addLog('Submitting complaint...');
 
     try {
-      let complaint_audio_url = '';
-      if (audioBlob) {
+      let photo_url = '';
+      
+      if (photoBlob) {
         const uploadData = new FormData();
-        uploadData.append('audio', audioBlob, 'complaint-recording.wav');
+        uploadData.append('photo', photoBlob, 'complaint-evidence.jpg');
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadData });
         if (uploadRes.ok) {
           const uploadResult = await uploadRes.json();
-          complaint_audio_url = uploadResult.complaint_audio_url || '';
+          photo_url = uploadResult.photo_url || '';
         }
       }
 
@@ -541,389 +387,361 @@ export default function VoiceAssistant({ language, user, onCompleteStep, onSubmi
         village_area: formData.village,
         complaint_category: formData.category,
         complaint_description_text: formData.description,
-        photo_url: '',
-        complaint_audio_url,
+        photo_url,
+        complaint_audio_url: '',
         latitude: coords.latitude,
         longitude: coords.longitude,
         language,
       };
 
-      const res  = await fetch('/api/complaints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await fetch('/api/complaints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
       const data = await res.json();
       setIsSubmitting(false);
 
       if (data.success) {
-        addLog('Submission successful!');
-        localStorage.removeItem('sachivalayam_voice_draft');
+        localStorage.removeItem('sachivalayam_form_draft');
         if (onSubmissionComplete) onSubmissionComplete(data.complaint.id);
-        else if (onCompleteStep)  onCompleteStep(formData, audioBlob);
       } else {
         showToast(isTelugu ? 'ఫిర్యాదు సమర్పణ విఫలమైంది.' : 'Submission failed. Try again.');
       }
     } catch (err) {
       setIsSubmitting(false);
       showToast(isTelugu ? 'ఫిర్యాదు సమర్పణ విఫలమైంది.' : 'Submission failed. Try again.');
-      addLog(`Submit error: ${err.message}`);
+      console.error(err);
     }
   };
-  submitComplaintRef.current = submitComplaint;
 
-  // ─── Derived display values ──────────────────────────────────────────────
-  const currentAnswer =
-    currentStep === 1 ? formData.name :
-    currentStep === 2 ? formData.phone :
-    currentStep === 3 ? formData.village :
-    currentStep === 4 ? (formData.category ? (isTelugu ? categories.find(c => c.en === formData.category)?.te : formData.category) : '') :
-    currentStep === 5 ? formData.description : '';
-
-  const getStatusText = () => {
-    if (isOffline)                    return isTelugu ? 'ఆఫ్‌లైన్'        : 'Offline';
-    if (isSubmitting)                 return isTelugu ? 'సమర్పిస్తోంది...' : 'Submitting...';
-    if (isListening)                  return isTelugu ? '🔴 వింటోంది'      : '🔴 Listening';
-    if (window.speechSynthesis.speaking) return isTelugu ? 'మాట్లాడుతోంది' : 'Speaking';
-    return isTelugu ? 'సిద్ధంగా ఉంది' : 'Ready';
-  };
-
-  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-
-  // Live transcript to show (interim or committed)
-  const liveDisplay = interimText || committedRef.current || currentAnswer;
-
-  // ─── Render ──────────────────────────────────────────────────────────────
   return (
-    <div className="va-root">
-
+    <div className="va-root" style={{ textAlign: 'left', maxWidth: '640px', margin: '0 auto', padding: '16px' }}>
+      
       {/* ── Top Header ── */}
-      <div className="va-topbar">
+      <div className="va-topbar" style={{ marginBottom: '20px' }}>
         <div className="va-topbar-left">
-          <div className="va-avatar">{user?.name?.[0]?.toUpperCase() || '🎙️'}</div>
+          <div className="va-avatar">📝</div>
           <div>
-            <div className="va-topbar-title">{isTelugu ? 'వాయిస్ రిజిస్ట్రేషన్' : 'Voice Registration'}</div>
-            <div className="va-topbar-sub">{isTelugu ? 'గ్రామ సహాయక వ్యవస్థ' : 'Village Assistant System'} • {isTelugu ? 'దశ' : 'Step'} {currentStep}/6</div>
+            <div className="va-topbar-title">{t.title}</div>
+            <div className="va-topbar-sub">{t.subtitle}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className={`va-status-pill ${isOffline ? 'va-status-offline' : isListening ? 'va-status-listening' : window.speechSynthesis.speaking ? 'va-status-speaking' : 'va-status-ready'}`}>
-            {getStatusText()}
-          </span>
           <button
+            type="button"
             className="btn btn-secondary"
             style={{ minHeight: '32px', padding: '4px 12px', fontSize: '12px' }}
-            onClick={() => { stopListening(); synthesisRef.current?.cancel(); changeLanguage?.(isTelugu ? 'English' : 'Telugu'); }}
+            onClick={() => changeLanguage?.(isTelugu ? 'English' : 'Telugu')}
           >
             🌐 {isTelugu ? 'English' : 'తెలుగు'}
           </button>
-          <button className="va-cancel-btn" onClick={onCancel}>✕</button>
+          <button type="button" className="va-cancel-btn" onClick={onCancel}>✕</button>
         </div>
       </div>
 
-      {/* ── Offline Banner ── */}
-      {isOffline && (
-        <div className="va-offline-banner">
-          <span>📶</span>
-          <div>
-            <strong>{isTelugu ? 'ఇంటర్నెట్ కనెక్షన్ లేదు' : 'No Internet Connection'}</strong>
-            <div style={{ fontSize: '11.5px', marginTop: '2px', opacity: 0.9 }}>
-              {isTelugu ? 'వాయిస్ గుర్తింపు నిలిపివేయబడింది.' : 'Speech recognition requires internet. Please fill out the form manually.'}
+      {/* ── Step Progress Indicator ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '0 8px' }}>
+        {[1, 2, 3].map(stepNum => (
+          <div key={stepNum} style={{ display: 'flex', alignItems: 'center', flex: stepNum < 3 ? 1 : 'none' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: formStep === stepNum ? '#2563EB' : formStep > stepNum ? '#10B981' : 'var(--border-color)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '800',
+              fontSize: '14px',
+              boxShadow: formStep === stepNum ? '0 0 0 4px rgba(37,99,235,0.2)' : 'none',
+              transform: formStep === stepNum ? 'scale(1.08)' : 'scale(1)',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              {formStep > stepNum ? '✓' : stepNum}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step Rail ── */}
-      <div className="va-step-rail">
-        {[1,2,3,4,5,6].map(s => (
-          <div key={s} className="va-step-node" style={{ '--sc': stepColors[s-1] }}>
-            <div className={`va-step-circle ${currentStep === s ? 'active' : currentStep > s ? 'done' : ''}`}>
-              {currentStep > s ? '✓' : stepIcons[s-1]}
-            </div>
-            {s < 6 && <div className={`va-step-line ${currentStep > s ? 'done' : ''}`} />}
+            {stepNum < 3 && (
+              <div style={{
+                height: '3px',
+                flex: 1,
+                background: formStep > stepNum ? '#10B981' : 'var(--border-color)',
+                margin: '0 12px',
+                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+              }} />
+            )}
           </div>
         ))}
       </div>
 
-      {/* ── Question Card ── */}
-      <div className="va-question-card" style={{ borderColor: stepColors[currentStep-1] }}>
-        <div className="va-q-number" style={{ background: stepColors[currentStep-1] }}>
-          {isTelugu ? 'దశ' : 'Step'}{currentStep}
-        </div>
-        <p className="va-question-text">{QUESTIONS[currentStep]}</p>
-        <button
-          className="va-replay-btn"
-          disabled={isOffline}
-          onClick={() => {
-            addLog('Replay clicked');
-            stopListening();
-            synthesisRef.current?.cancel();
-            const utt = new SpeechSynthesisUtterance(QUESTIONS[currentStep]);
-            utt.lang  = isTelugu ? 'te-IN' : 'en-US';
-            utt.onend   = () => setTimeout(() => startListening(), 400);
-            utt.onerror = () => setTimeout(() => startListening(), 400);
-            synthesisRef.current?.speak(utt);
-          }}
-        >
-          🔊 {isTelugu ? 'మళ్ళీ వినండి' : 'Replay Question'}
-        </button>
-      </div>
-
-      {/* ── Mic Controls & Waveform (Steps 1-5) ── */}
-      {currentStep <= 5 && !isOffline && (
-        <div className="va-mic-area" style={{ padding: '8px 0' }}>
-
-          {isListening && (
-            <div className="va-timer-badge">⏱️ {formatTime(recordingSeconds)}</div>
-          )}
-
-          {/* Waveform visualiser */}
-          <div className="va-waveform-container">
-            {[...Array(9)].map((_, i) => {
-              const factor = [0.4, 0.6, 0.9, 1.2, 1.5, 1.2, 0.9, 0.6, 0.4][i];
-              const height = isListening ? Math.max(8, Math.min(48, 8 + volume * factor * 0.4)) : 8;
-              return (
-                <div
-                  key={i}
-                  className={`va-waveform-bar ${isListening ? 'active' : ''}`}
-                  style={{ height: `${height}px` }}
-                />
-              );
-            })}
-          </div>
-
-          {/* Live interim transcript bubble */}
-          {isListening && interimText && (
-            <div style={{
-              margin: '10px auto',
-              maxWidth: '90%',
-              background: 'rgba(37,99,235,0.08)',
-              border: '1px dashed #2563EB',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              fontSize: '14px',
-              color: '#1e40af',
-              fontStyle: 'italic',
-              textAlign: 'center',
-            }}>
-              🎙️ {interimText}
-            </div>
-          )}
-
-          {/* Controls */}
-          <div className="va-controls-strip">
-            <button className="va-control-btn" disabled={isListening}  onClick={handleStartResume}>
-              ⏺️ {isTelugu ? 'ప్రారంభించు' : 'Start'}
-            </button>
-            <button className="va-control-btn" disabled={!isListening} onClick={handlePause}>
-              ⏸️ {isTelugu ? 'తాత్కాలికంగా ఆపు' : 'Pause'}
-            </button>
-            <button className="va-control-btn" disabled={!isListening} onClick={handleStop}>
-              ⏹️ {isTelugu ? 'పూర్తిచేయి' : 'Stop'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Category Cards (Step 4) ── */}
-      {currentStep === 4 && (
-        <div className="va-cat-grid" style={{ marginBottom: '20px' }}>
-          {categories.map(c => (
-            <button
-              key={c.en}
-              className={`va-cat-btn ${formData.category === c.en ? 'selected' : ''}`}
-              onClick={() => { addLog(`Category selected: ${c.en}`); setFormData(p => ({ ...p, category: c.en })); }}
-            >
-              <span className="va-cat-icon">{c.icon}</span>
-              <span className="va-cat-label">{isTelugu ? c.te : c.en}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Answer Box (Steps 1-5) ── */}
-      {currentStep <= 5 && (
-        <div className={`va-answer-box ${currentAnswer ? 'has-answer' : ''} ${isListening ? 'listening' : ''}`}>
-          <div className="va-answer-label">{LABELS[currentStep]}</div>
-          {currentStep !== 4 ? (
-            <input
-              type="text"
-              className="form-control"
-              style={{ background: 'transparent', border: 'none', fontSize: '20px', fontWeight: '800', width: '100%', color: 'var(--text-primary)', outline: 'none', padding: '0' }}
-              value={liveDisplay}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onFocus={() => { if (isListening) handlePause(); }}
-              list={currentStep === 3 ? 'ap-villages-list' : undefined}
-              placeholder={isListening
-                ? (isTelugu ? '🎙️ మాట్లాడండి...' : '🎙️ Speak now...')
-                : (isTelugu ? 'ఇక్కడ టైప్ చేయవచ్చు...' : 'Type here to edit...')}
-            />
-          ) : (
-            <div className="va-answer-text">{currentAnswer || (isTelugu ? 'వర్గాన్ని ఎంచుకోండి...' : 'Select a category above...')}</div>
-          )}
-          {currentAnswer && !isListening && (
-            <button className="va-redo-btn" onClick={handleClear}>
-              🔄 {isTelugu ? 'క్లియర్ చేయి' : 'Clear Input'}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── Summary & Confirm (Step 6) ── */}
-      {currentStep === 6 && (
-        <div>
-          <div className="va-summary-box">
-            <h4 style={{ fontSize: '15px', fontWeight: '800', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '14px' }}>
-              📋 {isTelugu ? 'సమర్పించబోయే ఫిర్యాదు వివరాలు:' : 'Submitted Complaint Details:'}
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
-              <div className="va-summary-item"><div className="va-summary-title">{LABELS[1]}</div><div className="va-summary-value">{formData.name}</div></div>
-              <div className="va-summary-item"><div className="va-summary-title">{LABELS[2]}</div><div className="va-summary-value">{formData.phone}</div></div>
-              <div className="va-summary-item" style={{ gridColumn: 'span 2' }}><div className="va-summary-title">{LABELS[3]}</div><div className="va-summary-value">{formData.village}</div></div>
-              <div className="va-summary-item" style={{ gridColumn: 'span 2' }}><div className="va-summary-title">{LABELS[4]}</div><div className="va-summary-value">{formData.category}</div></div>
-              <div className="va-summary-item" style={{ gridColumn: 'span 2' }}><div className="va-summary-title">{LABELS[5]}</div><div className="va-summary-value" style={{ wordBreak: 'break-word', lineHeight: '1.4' }}>{formData.description}</div></div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* ── Step 1: Resident Details ── */}
+        {formStep === 1 && (
+          <div className="card animated-card" style={{ padding: '24px', borderRadius: '16px', animation: 'stepEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px', color: 'var(--text-primary)' }}>
+              👤 {isTelugu ? 'నివాసి వివరాలు' : 'Resident Details'}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.nameLabel}</label>
+                <input type="text" className="form-control" value={formData.name} onChange={e => updateField('name', e.target.value)} placeholder={t.namePlaceholder} style={{ fontSize: '14.5px', padding: '14px' }} />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.phoneLabel}</label>
+                <input type="text" className="form-control" value={formData.phone} onChange={e => updateField('phone', e.target.value)} placeholder={t.phonePlaceholder} style={{ fontSize: '14.5px', padding: '14px' }} />
+              </div>
             </div>
           </div>
-          {!isOffline && (
-            <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px dashed #22C55E', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#16A34A', fontWeight: '700', marginBottom: '20px' }}>
-              🗣️ {isTelugu ? 'సమర్పించడానికి "అవును" అని చెప్పండి లేదా సరిదిద్దడానికి "కాదు" అని చెప్పండి.' : 'Say "yes" to confirm and submit, or "no" to restart.'}
+        )}
+
+        {/* ── Step 2: Grievance Details ── */}
+        {formStep === 2 && (
+          <div className="card animated-card" style={{ padding: '24px', borderRadius: '16px', animation: 'stepEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px', color: 'var(--text-primary)' }}>
+              📋 {isTelugu ? 'సమస్య వివరాలు' : 'Grievance Details'}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* Village Input with Geolocator button */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{t.villageLabel}</label>
+                  <button 
+                    type="button" 
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      color: '#2563EB', 
+                      fontSize: '12px', 
+                      fontWeight: '700', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                    }}
+                    onClick={detectLocation}
+                    disabled={isDetectingLocation}
+                  >
+                    🛰️ {isDetectingLocation ? t.detectingLocBtn : t.detectLocBtn}
+                  </button>
+                </div>
+                <input type="text" className="form-control" list="ap-villages-list" value={formData.village} onChange={e => updateField('village', e.target.value)} placeholder={t.villagePlaceholder} style={{ fontSize: '14.5px', padding: '14px' }} />
+              </div>
+
+              {/* Category selection */}
+              <div>
+                <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.categoryLabel}</label>
+                <select className="form-control" value={formData.category} onChange={e => updateField('category', e.target.value)} style={{ fontSize: '14.5px', padding: '12px 14px', height: '52px', cursor: 'pointer' }}>
+                  <option value="">{t.categorySelect}</option>
+                  {categories.map(c => <option key={c.en} value={c.en}>{c.icon} {isTelugu ? c.te : c.en}</option>)}
+                </select>
+              </div>
+
+              {/* Description input */}
+              <div>
+                <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.descriptionLabel}</label>
+                <textarea className="form-control" rows="4" value={formData.description} onChange={e => updateField('description', e.target.value)} placeholder={t.descriptionPlaceholder} style={{ fontSize: '14.5px', padding: '14px', resize: 'vertical' }} />
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Geotagging & Evidence ── */}
+        {formStep === 3 && (
+          <div className="card animated-card" style={{ padding: '24px', borderRadius: '16px', animation: 'stepEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px', color: 'var(--text-primary)' }}>
+              📷 {isTelugu ? 'సాక్ష్యం & జియోట్యాగ్' : 'Evidence & Geotagging'}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* GPS coordinates badge tag */}
+              <div style={{ textAlign: 'center', background: 'var(--hover-bg)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)' }}>
+                {locationStatus === 'locating' ? (
+                  <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: '600' }}>📡 {t.gpsLoading}</span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '13.5px', color: locationStatus === 'success' ? '#16A34A' : '#DC2626', fontWeight: '800' }}>
+                        {locationStatus === 'success' ? `✅ ${t.gpsSuccess}` : `⚠️ ${t.gpsErr}`}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={detectLocation} 
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', padding: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        title={isTelugu ? 'స్థానాన్ని నవీకరించండి' : 'Refresh location'}
+                      >
+                        🔄
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: '700', letterSpacing: '0.2px' }}>
+                      Lat: {coords.latitude?.toFixed(5)} | Lon: {coords.longitude?.toFixed(5)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Photo Capture stream or File picker */}
+              <div className="photo-capture-area" style={{ width: '100%' }}>
+                {photoPreview ? (
+                  <div style={{ width: '100%', borderRadius: '14px', overflow: 'hidden', border: '1.5px solid var(--border-color)', boxShadow: 'var(--soft-shadow)' }}>
+                    <img src={photoPreview} alt="Evidence" style={{ width: '100%', display: 'block', aspectRatio: '4/3', objectFit: 'cover' }} />
+                    <button 
+                      type="button"
+                      className="btn btn-secondary btn-block" 
+                      style={{ borderRadius: '0', border: 'none', padding: '14px', fontSize: '13.5px', fontWeight: '700' }}
+                      onClick={() => { setPhotoPreview(''); setPhotoBlob(null); }}
+                    >
+                      🔄 {t.retake}
+                    </button>
+                  </div>
+                ) : cameraActive ? (
+                  <div className="camera-preview-box" style={{ position: 'relative', width: '100%', aspectRatio: '4/3', borderRadius: '14px', overflow: 'hidden', background: '#000', boxShadow: 'var(--soft-shadow)' }}>
+                    <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }}></video>
+                    <button 
+                      type="button"
+                      className="btn btn-danger" 
+                      style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', width: '58px', height: '58px', borderRadius: '50%', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', boxShadow: '0 6px 16px rgba(0,0,0,0.4)', border: '2px solid #fff' }}
+                      onClick={capturePhoto}
+                    >
+                      📸
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    className="camera-preview-box card-interactive" 
+                    style={{ 
+                      width: '100%', 
+                      aspectRatio: '4/3', 
+                      borderRadius: '14px', 
+                      border: '2.5px dashed var(--border-color)', 
+                      background: 'var(--hover-bg)', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      cursor: 'pointer',
+                      gap: '12px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onClick={startCamera}
+                  >
+                    <span style={{ fontSize: '54px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.06))' }}>📷</span>
+                    <span style={{ fontWeight: '800', fontSize: '14.5px', color: 'var(--text-secondary)' }}>{t.startCam}</span>
+                  </div>
+                )}
+
+                <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+
+                {!photoPreview && !cameraActive && (
+                  <div style={{ width: '100%', marginTop: '16px' }}>
+                    <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '700', marginBottom: '8px' }}>
+                      {t.uploadFallback}
+                    </label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="form-control"
+                      style={{ fontSize: '13px', padding: '12px' }}
+                    />
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ── Step Navigation Button Strip ── */}
+        <div style={{ display: 'flex', gap: '12px', marginTop: '10px', marginBottom: '40px' }}>
+          {formStep === 1 && (
+            <>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ flex: 1, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px' }} 
+                onClick={onCancel}
+              >
+                {t.cancel}
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                style={{ flex: 2, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px', background: '#2563EB' }} 
+                onClick={() => handleNext(1)}
+              >
+                {isTelugu ? 'తదుపరి →' : 'Next →'}
+              </button>
+            </>
           )}
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn btn-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px' }} onClick={() => setCurrentStep(1)}>
-              ✏️ {isTelugu ? 'సవరించు' : 'Edit Details'}
-            </button>
-            <button className="btn btn-primary" style={{ flex: 1, padding: '14px', borderRadius: '12px', background: '#10B981' }} disabled={isSubmitting} onClick={submitComplaint}>
-              🚀 {isSubmitting ? (isTelugu ? 'సమర్పిస్తున్నాము...' : 'Submitting...') : (isTelugu ? 'సమర్పించండి' : 'Confirm & Submit')}
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* ── Browser unsupported ── */}
-      {micStatus === 'no-browser' && (
-        <div className="va-alert va-alert-error" style={{ margin: '16px 0' }}>
-          🚫 <strong>{isTelugu ? 'బ్రౌజర్ మద్దతు లేదు' : 'Unsupported Browser'}</strong>
-          <p style={{ fontSize: '12.5px', marginTop: '4px' }}>
-            {isTelugu ? 'వాయిస్ అసిస్టెంట్ కేవలం Chrome లేదా Edge లో పనిచేస్తుంది.' : 'Voice recognition requires Chrome or Edge. Please fill out the manual form below.'}
-          </p>
-        </div>
-      )}
-
-      {/* ── No mic permission ── */}
-      {micStatus === 'no-permission' && (
-        <div className="va-alert va-alert-warning" style={{ margin: '16px 0', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', padding: '16px', borderRadius: '12px', textAlign: 'left' }}>
-          ⚠️ <strong>{isTelugu ? 'మైక్రోఫోన్ అనుమతి అవసరం' : 'Microphone Permission Required'}</strong>
-          <p style={{ fontSize: '12.5px', marginTop: '6px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-            {isTelugu ? 'బ్రౌజర్ సెట్టింగ్స్‌లో మైక్రోఫోన్‌ని అనుమతించి దిగువ బటన్ నొక్కండి.' : 'Allow microphone in your browser settings, then click below.'}
-          </p>
-          <button className="va-btn btn btn-sm btn-primary" style={{ marginTop: '10px', padding: '6px 12px', fontSize: '12.5px', background: '#2563EB', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }} onClick={handleStartResume}>
-            🔄 {isTelugu ? 'మళ్ళీ ప్రయత్నించండి' : 'Retry Access'}
-          </button>
-        </div>
-      )}
-
-      {/* ── Network error ── */}
-      {micStatus === 'no-internet' && (
-        <div className="va-alert va-alert-warning" style={{ margin: '16px 0', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', padding: '16px', borderRadius: '12px', textAlign: 'left' }}>
-          ⚠️ <strong>{isTelugu ? 'వాయిస్ గుర్తింపు లోపం' : 'Speech Recognition Network Error'}</strong>
-          <p style={{ fontSize: '12.5px', marginTop: '6px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-            {isTelugu ? 'Chrome క్లౌడ్ స్పీచ్ సేవతో అనుసంధానం కాలేదు. VPN ఆపి మళ్ళీ ప్రయత్నించండి.' : 'Chrome could not connect to speech servers. Disable VPN and retry.'}
-          </p>
-          <button className="va-btn btn btn-sm btn-primary" style={{ marginTop: '10px', padding: '6px 12px', fontSize: '12.5px', background: '#2563EB', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }} onClick={handleStartResume}>
-            🔄 {isTelugu ? 'మళ్ళీ ప్రయత్నించండి' : 'Retry Connection'}
-          </button>
-        </div>
-      )}
-
-      {/* ── Navigation (Steps 1-5) ── */}
-      {currentStep <= 5 && (
-        <div className="va-nav">
-          {currentStep > 1 && (
-            <button className="va-btn va-btn-back" onClick={goPrev}>← {isTelugu ? 'వెనుకకు' : 'Back'}</button>
+          {formStep === 2 && (
+            <>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ flex: 1, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px' }} 
+                onClick={() => setFormStep(1)}
+              >
+                {isTelugu ? '← వెనుకకు' : '← Back'}
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                style={{ flex: 2, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px', background: '#2563EB' }} 
+                onClick={() => handleNext(2)}
+              >
+                {isTelugu ? 'తదుపరి →' : 'Next →'}
+              </button>
+            </>
           )}
-          <button className="va-btn va-btn-next" style={{ background: stepColors[currentStep-1] }} onClick={goNext}>
-            {isTelugu ? 'తదుపరి →' : 'Next →'}
-          </button>
+
+          {formStep === 3 && (
+            <>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ flex: 1, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px' }} 
+                onClick={() => setFormStep(2)}
+                disabled={isSubmitting}
+              >
+                {isTelugu ? '← వెనుకకు' : '← Back'}
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ flex: 2, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px', background: '#10B981' }}
+                disabled={isSubmitting}
+              >
+                🚀 {isSubmitting ? t.submitting : t.submit}
+              </button>
+            </>
+          )}
         </div>
-      )}
 
-      {/* ── Manual Fallback Form ── */}
-      <div className="va-manual-form" style={{ marginTop: '36px', borderTop: '2px dashed var(--border-color)', paddingTop: '28px', textAlign: 'left' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>
-          ⌨️ {isTelugu ? 'లేదా సమాచారాన్ని ఇక్కడ టైప్ చేయండి' : 'Manual Form Fallback'}
-        </h3>
-        <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          {isTelugu ? 'వాయిస్ అసిస్టెంట్ ఉపయోగించడం ఇష్టం లేకుంటే క్రింది వివరాలను పూరించండి:' : 'If you prefer not to use voice, complete the form manually:'}
-        </p>
+      </form>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>👤 {isTelugu ? 'మీ పేరు' : 'Your Name'}</label>
-            <input type="text" className="form-control" value={formData.name} onChange={e => updateFieldManually('name', e.target.value)} onFocus={() => { if (isListening) handlePause(); }} placeholder={isTelugu ? 'మీ పేరు టైప్ చేయండి' : 'Enter your name'} style={{ fontSize: '14px', padding: '12px' }} />
-          </div>
-
-          <div>
-            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>📞 {isTelugu ? 'మొబైల్ సంఖ్య' : 'Phone Number'}</label>
-            <input type="text" className="form-control" value={formData.phone} onChange={e => updateFieldManually('phone', e.target.value)} onFocus={() => { if (isListening) handlePause(); }} placeholder={isTelugu ? 'పది అంకెల మొబైల్ సంఖ్య' : 'Enter 10-digit phone number'} style={{ fontSize: '14px', padding: '12px' }} />
-          </div>
-
-          <div>
-            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>📍 {isTelugu ? 'గ్రామం / ప్రాంతం' : 'Village / Area'}</label>
-            <input type="text" className="form-control" list="ap-villages-list" value={formData.village} onChange={e => updateFieldManually('village', e.target.value)} onFocus={() => { if (isListening) handlePause(); }} placeholder={isTelugu ? 'మీ గ్రామం టైప్ చేయండి' : 'Enter your village or area'} style={{ fontSize: '14px', padding: '12px' }} />
-          </div>
-
-          <div>
-            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>📋 {isTelugu ? 'సమస్య వర్గం' : 'Complaint Category'}</label>
-            <select className="form-control" value={formData.category} onChange={e => updateFieldManually('category', e.target.value)} style={{ fontSize: '14px', padding: '12px', height: '48px', cursor: 'pointer' }}>
-              <option value="">{isTelugu ? '-- వర్గాన్ని ఎంచుకోండి --' : '-- Select Category --'}</option>
-              {categories.map(c => <option key={c.en} value={c.en}>{isTelugu ? c.te : c.en}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>✍️ {isTelugu ? 'సమస్య వివరణ' : 'Complaint Description'}</label>
-            <textarea className="form-control" rows="4" value={formData.description} onChange={e => updateFieldManually('description', e.target.value)} onFocus={() => { if (isListening) handlePause(); }} placeholder={isTelugu ? 'సమస్యను వివరంగా ఇక్కడ టైప్ చేయండి...' : 'Describe your problem in detail here...'} style={{ fontSize: '14px', padding: '12px', resize: 'vertical' }} />
-          </div>
-
-          <button
-            className="btn btn-primary"
-            style={{ padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px', marginTop: '10px', background: '#10B981' }}
-            onClick={(e) => {
-              e.preventDefault();
-              if (!formData.name.trim())                              return showToast(isTelugu ? 'పేరు టైప్ చేయండి' : 'Please enter your name');
-              if (!formData.phone.trim() || formData.phone.length < 10) return showToast(isTelugu ? 'మొబైల్ సంఖ్య టైప్ చేయండి' : 'Please enter 10-digit phone number');
-              if (!formData.village.trim())                           return showToast(isTelugu ? 'గ్రామం టైప్ చేయండి' : 'Please enter your village');
-              if (!formData.category)                                 return showToast(isTelugu ? 'వర్గాన్ని ఎంచుకోండి' : 'Please select a category');
-              if (!formData.description.trim())                       return showToast(isTelugu ? 'వివరణ టైప్ చేయండి' : 'Please describe your complaint');
-              submitComplaint();
-            }}
-          >
-            🚀 {isTelugu ? 'వివరాలను సమర్పించండి' : 'Submit Details Manually'}
-          </button>
-        </div>
-      </div>
-
-      {/* AP Villages datalist */}
+      {/* AP Villages datalist helper */}
       <datalist id="ap-villages-list">
         {AP_VILLAGES.map(v => <option key={v.en} value={isTelugu ? v.te : v.en} />)}
       </datalist>
 
-      {/* ── Debug Console ── */}
-      <div className="va-debug-panel">
-        <details>
-          <summary>⚙️ Debug Console &amp; Diagnostics</summary>
-          <div className="va-debug-content">
-            <div className="va-debug-metric">
-              <span>Mic Status: <strong>{micStatus}</strong></span>
-              <span>Volume: <strong>{volume}%</strong></span>
-              <span>Listening: <strong>{isListening ? 'YES' : 'NO'}</strong></span>
-            </div>
-            <div className="va-debug-logs">
-              {logs.length === 0
-                ? <div className="va-debug-log-empty">No logs yet. Speak or tap controls.</div>
-                : logs.map((log, i) => <div key={i} className="va-debug-log-line">{log}</div>)}
-            </div>
-          </div>
-        </details>
-      </div>
+      {/* Inline styles for step entry animations */}
+      <style>{`
+        .animated-card {
+          animation: stepEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes stepEnter {
+          0% { transform: translateY(15px) scale(0.98); opacity: 0; filter: blur(2px); }
+          100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+        }
+      `}</style>
 
     </div>
   );
