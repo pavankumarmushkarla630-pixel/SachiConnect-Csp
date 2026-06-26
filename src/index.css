@@ -3638,7 +3638,7 @@ body.dark-theme .va-offline-banner {
 .va-floating-btn {
   position: fixed;
   left: 24px;
-  bottom: 24px;
+  bottom: 200px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -3763,4 +3763,138 @@ body.dark-theme .bg-orb {
   color: #FFFFFF;
   margin-top: 4px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* =================================================================
+   MOBILE RESPONSIVENESS AND UX ENHANCEMENTS
+   ================================================================= */
+
+@media (max-width: 768px) {
+  /* Prevent collapsed state sidebar issues on mobile */
+  .app-sidebar {
+    width: var(--sidebar-width) !important;
+    z-index: 1000 !important;
+  }
+  
+  .app-sidebar.collapsed ~ .app-viewport,
+  .app-viewport {
+    margin-left: 0 !important;
+    padding-top: 64px !important;
+  }
+
+  .app-sidebar.collapsed ~ .app-viewport .app-topbar,
+  .app-topbar {
+    left: 0 !important;
+    height: 64px !important;
+    padding: 0 16px !important;
+    z-index: 990 !important;
+  }
+
+  .app-main-content {
+    padding: 16px !important;
+  }
+
+  /* Compact topbar elements on mobile */
+  .topbar-search-container {
+    display: none !important;
+  }
+
+  .lang-pill-text {
+    display: none !important;
+  }
+
+  .profile-pill-info {
+    display: none !important;
+  }
+
+  .breadcrumb-title {
+    font-size: 15px !important;
+  }
+
+  /* Grid Layouts to single column stack */
+  .charts-container,
+  [style*="display: grid; grid-template-columns: repeat(3, 1fr)"],
+  [style*="display: grid; grid-template-columns: repeat(4, 1fr)"],
+  [style*="gridTemplateColumns: repeat(3, 1fr)"],
+  [style*="gridTemplateColumns: repeat(auto-fit, minmax(280px, 1fr))"],
+  [style*="gridTemplateColumns: repeat(auto-fit, minmax(320px, 1fr))"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .va-floating-btn {
+    left: 16px !important;
+    bottom: 120px !important;
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 20px !important;
+  }
+
+  .dev-role-hud {
+    bottom: 8px !important;
+    left: 8px !important;
+    padding: 6px !important;
+    border-radius: 12px !important;
+    min-width: 90px !important;
+    gap: 4px !important;
+  }
+
+  .dev-role-label {
+    font-size: 8px !important;
+    padding-bottom: 2px !important;
+  }
+
+  .dev-role-btn {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Helpline directory cards stacking */
+  .directory-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+
+  .directory-card > div:last-child {
+    width: 100% !important;
+  }
+
+  .directory-card .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    display: flex !important;
+    align-items: center !important;
+    min-height: 44px !important;
+  }
+
+  /* Forms and button targets accessibility */
+  .form-control,
+  select.form-control,
+  input.form-control,
+  .btn,
+  .btn-auth {
+    min-height: 46px !important;
+    font-size: 14px !important;
+  }
+
+  /* Onboarding/Login pages adjustments */
+  .auth-form-wrapper {
+    flex-direction: column !important;
+  }
+
+  .auth-form-panel {
+    padding: 24px 16px !important;
+  }
+
+  .role-cards-split {
+    padding: 0 8px !important;
+  }
+
+  .role-card {
+    padding: 20px !important;
+  }
 }

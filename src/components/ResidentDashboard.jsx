@@ -37,6 +37,12 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('grievances');
+  const [dialingContact, setDialingContact] = useState(null);
+
+  const handleCopyPhone = (phone) => {
+    navigator.clipboard.writeText(phone);
+    showToast(language === 'Telugu' ? 'ఫోన్ నంబర్ కాపీ చేయబడింది!' : 'Phone number copied to clipboard!');
+  };
 
   const isPredefined = user?.village && PREDEFINED_VILLAGES.includes(user.village);
   const [selectedVillage, setSelectedVillage] = useState(
@@ -857,7 +863,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
             {directory.map((contact, index) => (
               <div 
                 key={index} 
-                className="card" 
+                className="card directory-card" 
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -892,16 +898,15 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                   <div style={{ fontSize: '14.5px', fontWeight: '800', color: 'var(--primary)', marginTop: '6px' }}>{contact.phone}</div>
                 </div>
 
-                <div>
-                  <a 
-                    href={`tel:${contact.phone.replace(/\s+/g, '')}`} 
-                    className="btn btn-secondary" 
-                    style={{ minHeight: '36px', padding: '6px 16px', fontSize: '12.5px' }}
-                    onClick={() => { showToast(language === 'Telugu' ? `${contact.name} కి కాల్ ప్రారంభించబడుతోంది...` : `Opening phone dialer for ${contact.name}...`); }}
-                  >
-                    📞 {t.call}
-                  </a>
-                </div>
+                 <div>
+                   <button 
+                     className="btn btn-secondary" 
+                     style={{ minHeight: '36px', padding: '6px 16px', fontSize: '12.5px', cursor: 'pointer', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                     onClick={() => setDialingContact(contact)}
+                   >
+                     📞 {t.call}
+                   </button>
+                 </div>
               </div>
             ))}
           </div>
@@ -916,6 +921,165 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
       >
         🎙️
       </button>
+
+      {/* PHONE DIALOG MODAL */}
+      {dialingContact && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'var(--surface-color)',
+            border: '1.5px solid var(--border-color)',
+            borderRadius: '20px',
+            width: '90%',
+            maxWidth: '420px',
+            padding: '28px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            {/* Close button */}
+            <button 
+              onClick={() => setDialingContact(null)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'var(--hover-bg)',
+                border: 'none',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                color: 'var(--text-secondary)',
+                fontWeight: 'bold'
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Avatar */}
+            <div style={{
+              fontSize: '44px',
+              background: 'var(--hover-bg)',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto',
+              border: '2px solid var(--border-color)'
+            }}>
+              {dialingContact.avatar}
+            </div>
+
+            {/* Name and Title */}
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>
+              {dialingContact.name}
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '20px' }}>
+              {dialingContact.title}
+            </p>
+
+            {/* Phone Display Box */}
+            <div style={{
+              background: 'var(--hover-bg)',
+              borderRadius: '14px',
+              padding: '16px',
+              border: '1px solid var(--border-color)',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.5px' }}>
+                📞 {dialingContact.phone}
+              </span>
+              <button
+                onClick={() => handleCopyPhone(dialingContact.phone)}
+                style={{
+                  background: 'var(--surface-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+              >
+                📋 {language === 'Telugu' ? 'కాపీ' : 'Copy'}
+              </button>
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setDialingContact(null)}
+                style={{
+                  flex: 1,
+                  background: 'var(--hover-bg)',
+                  border: '1.5px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  height: '46px'
+                }}
+              >
+                {language === 'Telugu' ? 'రద్దు చేయి' : 'Cancel'}
+              </button>
+              
+              <a
+                href={`tel:${dialingContact.phone.replace(/\s+/g, '')}`}
+                onClick={() => {
+                  setDialingContact(null);
+                  showToast(language === 'Telugu' ? `${dialingContact.name} కి కాల్ ప్రారంభించబడింది` : `Calling ${dialingContact.name}...`);
+                }}
+                style={{
+                  flex: 1,
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  height: '46px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.2)'
+                }}
+              >
+                📞 {language === 'Telugu' ? 'కాల్ చేయి' : 'Call Now'}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
