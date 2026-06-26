@@ -16,6 +16,23 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'map', or 'analytics'
+  const [officialLocation, setOfficialLocation] = useState(() => {
+    const saved = localStorage.getItem('sachivalayam_official_location');
+    if (saved) return saved;
+    if (user?.village && ['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu'].includes(user.village)) {
+      return user.village;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (officialLocation) {
+      setSelectedVillageMap(officialLocation);
+    } else {
+      setSelectedVillageMap('All');
+    }
+  }, [officialLocation]);
+
   const [selectedVillageMap, setSelectedVillageMap] = useState('All'); // GIS Map selection filter
   const [hoveredVillage, setHoveredVillage] = useState(null); // Map hover tooltip state
 
@@ -200,7 +217,15 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const maxStatusVal = statusValues.length > 0 ? Math.max(...statusValues, 1) : 1;
 
   const monthValues = Object.values(analytics.monthlyCount);
-  const maxMonthVal = monthValues.length > 0 ? Math.max(...monthValues, 1) : 1;
+  const handleSetOfficialLocation = (e) => {
+    e.preventDefault();
+    const loc = e.target.elements.officialLocSelect.value;
+    if (loc) {
+      setOfficialLocation(loc);
+      localStorage.setItem('sachivalayam_official_location', loc);
+      showToast(language === 'Telugu' ? `కార్యాలయ స్థానం దీనికి సెట్ చేయబడింది: ${loc}` : `Jurisdiction set to ${loc}`);
+    }
+  };
 
   return (
     <div className="app-main-content">
@@ -410,148 +435,222 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
         </div>
       ) : activeTab === 'map' ? (
         /* GIS MAP VIEW */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-          
-          {/* Interactive SVG Map Card */}
-          <div className="card" style={{ padding: '24px', position: 'relative' }}>
-            <h3 style={{ fontSize: '17px', marginBottom: '4px', textAlign: 'left' }}>🗺️ {t.mapHUDTitle}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', textAlign: 'left' }}>{t.mapHUDSub}</p>
+        !officialLocation ? (
+          <div style={{ maxWidth: '480px', margin: '40px auto', animation: 'stepEnter 0.4s ease-out', width: '100%' }}>
+            <div className="card" style={{ padding: '32px', borderRadius: '24px', textAlign: 'center', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📍</div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                {language === 'Telugu' ? 'కార్యాలయ స్థానాన్ని నమోదు చేయండి' : 'Enter Jurisdiction Location'}
+              </h3>
+              <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.5', fontWeight: '500' }}>
+                {language === 'Telugu' 
+                  ? 'ఇంటరాక్టివ్ గ్రామ జీఐఎస్ మ్యాప్‌ను చూడటానికి, దయచేసి మీ కేటాయించిన గ్రామ సచివాలయాన్ని ఎంచుకోండి.' 
+                  : 'To view the interactive Village GIS Hotspot Map, please select your assigned village secretariat.'}
+              </p>
+              <form onSubmit={handleSetOfficialLocation} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <select 
+                  name="officialLocSelect"
+                  className="form-control"
+                  style={{ 
+                    padding: '12px 14px', 
+                    borderRadius: '12px', 
+                    border: '1.5px solid var(--border-color)', 
+                    background: 'var(--surface-color)', 
+                    color: 'var(--text-primary)', 
+                    fontWeight: '700', 
+                    fontSize: '14.5px', 
+                    outline: 'none',
+                    cursor: 'pointer',
+                    height: '48px'
+                  }}
+                  required
+                >
+                  <option value="">{language === 'Telugu' ? '-- సచివాలయాన్ని ఎంచుకోండి --' : '-- Select Secretariat --'}</option>
+                  <option value="Kothacheruvu">Kothacheruvu (కొత్తచెరువు)</option>
+                  <option value="Bukkarayasamudram">Bukkarayasamudram (బుక్కరాయసముద్రం)</option>
+                  <option value="Rapthadu">Rapthadu (రాప్తాడు)</option>
+                </select>
+                
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{ padding: '12px', borderRadius: '12px', fontWeight: '800', fontSize: '14.5px', height: '48px', background: '#2563EB', border: 'none', color: '#fff', cursor: 'pointer' }}
+                >
+                  {language === 'Telugu' ? 'ధృవీకరించండి & మ్యాప్ చూడండి' : 'Confirm & View GIS Map'}
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
             
-            <div style={{ position: 'relative', width: '100%', background: 'var(--hover-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-              <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
-                {/* Background Connection Paths */}
-                <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-                <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-                <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-
-                {/* Animated Glowing Flow Overlays */}
-                <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-                <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-                <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-
-                {/* Bukkarayasamudram */}
-                <g 
-                  className="gis-village-region"
-                  style={{ cursor: 'pointer' }} 
-                  onClick={() => setSelectedVillageMap(selectedVillageMap === 'Bukkarayasamudram' ? 'All' : 'Bukkarayasamudram')}
-                  onMouseEnter={() => setHoveredVillage('Bukkarayasamudram')}
-                  onMouseLeave={() => setHoveredVillage(null)}
-                >
-                  <rect x="180" y="30" width="100" height="50" rx="8" fill={selectedVillageMap === 'Bukkarayasamudram' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Bukkarayasamudram' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                  <text x="230" y="52" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Bukkarayasamudram</text>
-                  
-                  <circle cx="230" cy="65" r="5" fill={bukkStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                  {bukkStats.unresolved > 0 && <circle cx="230" cy="65" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '230px 65px', animation: 'pulseRing 1.5s infinite' }} />}
-                </g>
-
-                {/* Kothacheruvu */}
-                <g 
-                  className="gis-village-region"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setSelectedVillageMap(selectedVillageMap === 'Kothacheruvu' ? 'All' : 'Kothacheruvu')}
-                  onMouseEnter={() => setHoveredVillage('Kothacheruvu')}
-                  onMouseLeave={() => setHoveredVillage(null)}
-                >
-                  <rect x="100" y="105" width="100" height="50" rx="8" fill={selectedVillageMap === 'Kothacheruvu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Kothacheruvu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                  <text x="150" y="128" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Kothacheruvu</text>
-                  
-                  <circle cx="150" cy="140" r="5" fill={kothacheruvuStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                  {kothacheruvuStats.unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
-                </g>
-
-                {/* Rapthadu */}
-                <g 
-                  className="gis-village-region"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setSelectedVillageMap(selectedVillageMap === 'Rapthadu' ? 'All' : 'Rapthadu')}
-                  onMouseEnter={() => setHoveredVillage('Rapthadu')}
-                  onMouseLeave={() => setHoveredVillage(null)}
-                >
-                  <rect x="20" y="180" width="100" height="50" rx="8" fill={selectedVillageMap === 'Rapthadu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Rapthadu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                  <text x="70" y="202" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Rapthadu</text>
-                  
-                  <circle cx="70" cy="215" r="5" fill={rapthaduStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                  {rapthaduStats.unresolved > 0 && <circle cx="70" cy="215" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '70px 215px', animation: 'pulseRing 1.5s infinite' }} />}
-                </g>
-              </svg>
-
-              {/* Dynamic Overlay HUD Tooltip */}
-              {hoveredVillage && (
-                <div 
-                  className="gis-tooltip"
+            {/* Interactive SVG Map Card */}
+            <div className="card" style={{ padding: '24px', position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <h3 style={{ fontSize: '17px', marginBottom: '4px', color: 'var(--text-primary)' }}>🗺️ {t.mapHUDTitle}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t.mapHUDSub}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setOfficialLocation('');
+                    localStorage.removeItem('sachivalayam_official_location');
+                  }}
                   style={{
-                    position: 'absolute',
-                    background: 'var(--surface-color)',
-                    border: '1.5px solid var(--primary)',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    boxShadow: 'var(--hover-shadow)',
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                    fontSize: '12.5px',
-                    width: '180px',
-                    textAlign: 'left',
-                    ...(hoveredVillage === 'Bukkarayasamudram' && { right: '24px', top: '24px' }),
-                    ...(hoveredVillage === 'Kothacheruvu' && { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }),
-                    ...(hoveredVillage === 'Rapthadu' && { left: '24px', bottom: '24px' })
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    fontSize: '12px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(37, 99, 235, 0.08)'
                   }}
                 >
-                  <strong style={{ color: 'var(--primary)', display: 'block', fontSize: '13px', marginBottom: '6px' }}>📍 {hoveredVillage}</strong>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Total:</span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{getVillageStats(hoveredVillage).total}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Active:</span>
-                      <strong style={{ color: 'var(--error)' }}>{getVillageStats(hoveredVillage).unresolved}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Resolved:</span>
-                      <strong style={{ color: 'var(--success)' }}>{getVillageStats(hoveredVillage).resolved}</strong>
+                  🔄 {language === 'Telugu' ? 'స్థానం మార్చు' : 'Change Location'}
+                </button>
+              </div>
+              
+              <div style={{ position: 'relative', width: '100%', background: 'var(--hover-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+                <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
+                  {/* Background Connection Paths */}
+                  <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+                  <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+                  <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+
+                  {/* Animated Glowing Flow Overlays */}
+                  <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+                  <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+                  <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+
+                  {/* Bukkarayasamudram */}
+                  <g 
+                    className="gis-village-region"
+                    style={{ cursor: 'pointer' }} 
+                    onClick={() => setSelectedVillageMap(selectedVillageMap === 'Bukkarayasamudram' ? 'All' : 'Bukkarayasamudram')}
+                    onMouseEnter={() => setHoveredVillage('Bukkarayasamudram')}
+                    onMouseLeave={() => setHoveredVillage(null)}
+                  >
+                    <rect x="180" y="30" width="100" height="50" rx="8" fill={selectedVillageMap === 'Bukkarayasamudram' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Bukkarayasamudram' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
+                    <text x="230" y="52" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Bukkarayasamudram</text>
+                    
+                    <circle cx="230" cy="65" r="5" fill={bukkStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                    {bukkStats.unresolved > 0 && <circle cx="230" cy="65" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '230px 65px', animation: 'pulseRing 1.5s infinite' }} />}
+                  </g>
+
+                  {/* Kothacheruvu */}
+                  <g 
+                    className="gis-village-region"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedVillageMap(selectedVillageMap === 'Kothacheruvu' ? 'All' : 'Kothacheruvu')}
+                    onMouseEnter={() => setHoveredVillage('Kothacheruvu')}
+                    onMouseLeave={() => setHoveredVillage(null)}
+                  >
+                    <rect x="100" y="105" width="100" height="50" rx="8" fill={selectedVillageMap === 'Kothacheruvu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Kothacheruvu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
+                    <text x="150" y="128" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Kothacheruvu</text>
+                    
+                    <circle cx="150" cy="140" r="5" fill={kothacheruvuStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                    {kothacheruvuStats.unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
+                  </g>
+
+                  {/* Rapthadu */}
+                  <g 
+                    className="gis-village-region"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedVillageMap(selectedVillageMap === 'Rapthadu' ? 'All' : 'Rapthadu')}
+                    onMouseEnter={() => setHoveredVillage('Rapthadu')}
+                    onMouseLeave={() => setHoveredVillage(null)}
+                  >
+                    <rect x="20" y="180" width="100" height="50" rx="8" fill={selectedVillageMap === 'Rapthadu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Rapthadu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
+                    <text x="70" y="202" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Rapthadu</text>
+                    
+                    <circle cx="70" cy="215" r="5" fill={rapthaduStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                    {rapthaduStats.unresolved > 0 && <circle cx="70" cy="215" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '70px 215px', animation: 'pulseRing 1.5s infinite' }} />}
+                  </g>
+                </svg>
+
+                {/* Dynamic Overlay HUD Tooltip */}
+                {hoveredVillage && (
+                  <div 
+                    className="gis-tooltip"
+                    style={{
+                      position: 'absolute',
+                      background: 'var(--surface-color)',
+                      border: '1.5px solid var(--primary)',
+                      borderRadius: '12px',
+                      padding: '10px 14px',
+                      boxShadow: 'var(--hover-shadow)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      fontSize: '12.5px',
+                      width: '180px',
+                      textAlign: 'left',
+                      ...(hoveredVillage === 'Bukkarayasamudram' && { right: '24px', top: '24px' }),
+                      ...(hoveredVillage === 'Kothacheruvu' && { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }),
+                      ...(hoveredVillage === 'Rapthadu' && { left: '24px', bottom: '24px' })
+                    }}
+                  >
+                    <strong style={{ color: 'var(--primary)', display: 'block', fontSize: '13px', marginBottom: '6px' }}>📍 {hoveredVillage}</strong>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Total:</span>
+                        <strong style={{ color: 'var(--text-primary)' }}>{getVillageStats(hoveredVillage).total}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Active:</span>
+                        <strong style={{ color: 'var(--error)' }}>{getVillageStats(hoveredVillage).unresolved}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Resolved:</span>
+                        <strong style={{ color: 'var(--success)' }}>{getVillageStats(hoveredVillage).resolved}</strong>
+                      </div>
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* GIS Details HUD Card */}
+            <div className="card" style={{ padding: '24px', height: 'fit-content' }}>
+              <h3 style={{ fontSize: '17px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                📍 {selectedVillageMap === 'All' ? 'All Villages Combined' : selectedVillageMap}
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--hover-bg)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-secondary)' }}>Total Complaints</span>
+                  <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                    {selectedVillageMap === 'All' ? complaints.length : getVillageStats(selectedVillageMap).total}
+                  </span>
                 </div>
-              )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(239, 68, 68, 0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--error)' }}>Unresolved/Active</span>
+                  <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--error)' }}>
+                    {selectedVillageMap === 'All' ? complaints.filter(c => c.status !== 'Resolved').length : getVillageStats(selectedVillageMap).unresolved}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(34, 197, 94, 0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.15)' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--success)' }}>Resolved</span>
+                  <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--success)' }}>
+                    {selectedVillageMap === 'All' ? complaints.filter(c => c.status === 'Resolved').length : getVillageStats(selectedVillageMap).resolved}
+                  </span>
+                </div>
+
+                {selectedVillageMap !== 'All' && (
+                  <button className="btn btn-primary btn-block" style={{ fontSize: '13.5px', padding: '10px' }} onClick={() => setActiveTab('list')}>
+                    🔍 View Grievances List
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* GIS Details HUD Card */}
-          <div className="card" style={{ padding: '24px', height: 'fit-content' }}>
-            <h3 style={{ fontSize: '17px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-              📍 {selectedVillageMap === 'All' ? 'All Villages Combined' : selectedVillageMap}
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--hover-bg)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-secondary)' }}>Total Complaints</span>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                  {selectedVillageMap === 'All' ? complaints.length : getVillageStats(selectedVillageMap).total}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(239, 68, 68, 0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-                <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--error)' }}>Unresolved/Active</span>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--error)' }}>
-                  {selectedVillageMap === 'All' ? complaints.filter(c => c.status !== 'Resolved').length : getVillageStats(selectedVillageMap).unresolved}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(34, 197, 94, 0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.15)' }}>
-                <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--success)' }}>Resolved</span>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--success)' }}>
-                  {selectedVillageMap === 'All' ? complaints.filter(c => c.status === 'Resolved').length : getVillageStats(selectedVillageMap).resolved}
-                </span>
-              </div>
-
-              {selectedVillageMap !== 'All' && (
-                <button className="btn btn-primary btn-block" style={{ fontSize: '13.5px', padding: '10px' }} onClick={() => setActiveTab('list')}>
-                  🔍 View Grievances List
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        )
       ) : (
         /* ANALYTICS CHARTS & RATINGS VIEW */
         <div>
