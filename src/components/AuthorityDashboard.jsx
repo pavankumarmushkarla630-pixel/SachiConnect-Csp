@@ -761,18 +761,18 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
               
               <div style={{ position: 'relative', width: '100%', background: 'var(--hover-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
                 {['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu'].includes(officialLocation) ? (
-                  <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
+                  <svg viewBox="0 0 340 300" style={{ width: '100%', height: 'auto', maxHeight: '400px' }}>
                     {/* Background Connection Paths */}
-                    <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-                    <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-                    <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+                    <path d="M 50,30 Q 170,100 290,30" fill="none" stroke="var(--border-color)" strokeWidth="5" strokeLinecap="round" />
+                    <path d="M 170,100 Q 80,200 50,255" fill="none" stroke="var(--border-color)" strokeWidth="5" strokeLinecap="round" />
+                    <path d="M 170,100 Q 260,200 290,255" fill="none" stroke="var(--border-color)" strokeWidth="5" strokeLinecap="round" />
 
                     {/* Animated Glowing Flow Overlays */}
-                    <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-                    <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-                    <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+                    <path d="M 50,30 Q 170,100 290,30" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.4 }} />
+                    <path d="M 170,100 Q 80,200 50,255" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.4 }} />
+                    <path d="M 170,100 Q 260,200 290,255" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.4 }} />
 
-                    {/* Bukkarayasamudram */}
+                    {/* Bukkarayasamudram - Top Right */}
                     <g 
                       className="gis-village-region"
                       style={{ cursor: 'pointer' }} 
@@ -780,14 +780,16 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                       onMouseEnter={() => setHoveredVillage('Bukkarayasamudram')}
                       onMouseLeave={() => setHoveredVillage(null)}
                     >
-                      <rect x="180" y="30" width="100" height="50" rx="8" fill={selectedVillageMap === 'Bukkarayasamudram' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Bukkarayasamudram' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                      <text x="230" y="52" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Bukkarayasamudram</text>
-                      
-                      <circle cx="230" cy="65" r="5" fill={bukkStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                      {bukkStats.unresolved > 0 && <circle cx="230" cy="65" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '230px 65px', animation: 'pulseRing 1.5s infinite' }} />}
+                      <rect x="205" y="5" width="120" height="60" rx="10" fill={selectedVillageMap === 'Bukkarayasamudram' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Bukkarayasamudram' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="2" style={{ transition: 'var(--transition-smooth)' }} />
+                      <text x="265" y="23" fontSize="8" fontWeight="800" textAnchor="middle" fill="var(--text-secondary)">Bukkarayasamudram</text>
+                      {/* Large count badge */}
+                      <circle cx="265" cy="43" r="14" fill={bukkStats.unresolved > 0 ? '#EF4444' : '#22C55E'} />
+                      <text x="265" y="48" fontSize="13" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{bukkStats.unresolved}</text>
+                      <text x="265" y="63" fontSize="7" fontWeight="600" textAnchor="middle" fill="var(--text-secondary)">{bukkStats.unresolved === 1 ? '1 complaint' : `${bukkStats.unresolved} complaints`}</text>
+                      {bukkStats.unresolved > 0 && <circle cx="265" cy="43" r="19" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ transformOrigin: '265px 43px', animation: 'pulseRing 1.5s infinite' }} />}
                     </g>
 
-                    {/* Kothacheruvu */}
+                    {/* Kothacheruvu - Center */}
                     <g 
                       className="gis-village-region"
                       style={{ cursor: 'pointer' }}
@@ -795,14 +797,16 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                       onMouseEnter={() => setHoveredVillage('Kothacheruvu')}
                       onMouseLeave={() => setHoveredVillage(null)}
                     >
-                      <rect x="100" y="105" width="100" height="50" rx="8" fill={selectedVillageMap === 'Kothacheruvu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Kothacheruvu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                      <text x="150" y="128" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Kothacheruvu</text>
-                      
-                      <circle cx="150" cy="140" r="5" fill={kothacheruvuStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                      {kothacheruvuStats.unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
+                      <rect x="110" y="75" width="120" height="60" rx="10" fill={selectedVillageMap === 'Kothacheruvu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Kothacheruvu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="2" style={{ transition: 'var(--transition-smooth)' }} />
+                      <text x="170" y="93" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Kothacheruvu</text>
+                      {/* Large count badge */}
+                      <circle cx="170" cy="113" r="14" fill={kothacheruvuStats.unresolved > 0 ? '#EF4444' : '#22C55E'} />
+                      <text x="170" y="118" fontSize="13" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{kothacheruvuStats.unresolved}</text>
+                      <text x="170" y="133" fontSize="7" fontWeight="600" textAnchor="middle" fill="var(--text-secondary)">{kothacheruvuStats.unresolved === 1 ? '1 complaint' : `${kothacheruvuStats.unresolved} complaints`}</text>
+                      {kothacheruvuStats.unresolved > 0 && <circle cx="170" cy="113" r="19" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ transformOrigin: '170px 113px', animation: 'pulseRing 1.5s infinite' }} />}
                     </g>
 
-                    {/* Rapthadu */}
+                    {/* Rapthadu - Bottom Left */}
                     <g 
                       className="gis-village-region"
                       style={{ cursor: 'pointer' }}
@@ -810,51 +814,84 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                       onMouseEnter={() => setHoveredVillage('Rapthadu')}
                       onMouseLeave={() => setHoveredVillage(null)}
                     >
-                      <rect x="20" y="180" width="100" height="50" rx="8" fill={selectedVillageMap === 'Rapthadu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Rapthadu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                      <text x="70" y="202" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Rapthadu</text>
-                      
-                      <circle cx="70" cy="215" r="5" fill={rapthaduStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                      {rapthaduStats.unresolved > 0 && <circle cx="70" cy="215" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '70px 215px', animation: 'pulseRing 1.5s infinite' }} />}
+                      <rect x="15" y="215" width="120" height="60" rx="10" fill={selectedVillageMap === 'Rapthadu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Rapthadu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="2" style={{ transition: 'var(--transition-smooth)' }} />
+                      <text x="75" y="233" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Rapthadu</text>
+                      {/* Large count badge */}
+                      <circle cx="75" cy="253" r="14" fill={rapthaduStats.unresolved > 0 ? '#EF4444' : '#22C55E'} />
+                      <text x="75" y="258" fontSize="13" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{rapthaduStats.unresolved}</text>
+                      <text x="75" y="273" fontSize="7" fontWeight="600" textAnchor="middle" fill="var(--text-secondary)">{rapthaduStats.unresolved === 1 ? '1 complaint' : `${rapthaduStats.unresolved} complaints`}</text>
+                      {rapthaduStats.unresolved > 0 && <circle cx="75" cy="253" r="19" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ transformOrigin: '75px 253px', animation: 'pulseRing 1.5s infinite' }} />}
                     </g>
                   </svg>
                 ) : (
-                  <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
-                    {/* Connection lines from center to wards */}
-                    <path d="M 150,130 L 55,47" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
-                    <path d="M 150,130 L 245,47" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
-                    <path d="M 150,130 L 150,217" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                  <svg viewBox="0 0 340 310" style={{ width: '100%', height: 'auto', maxHeight: '420px' }}>
+                    {/* Connection lines from center hub to wards */}
+                    <path d="M 170,155 L 75,65" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M 170,155 L 265,65" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M 170,155 L 170,245" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                    {/* Animated flow lines */}
+                    <path d="M 170,155 L 75,65" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.4 }} />
+                    <path d="M 170,155 L 265,65" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.4 }} />
+                    <path d="M 170,155 L 170,245" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.4 }} />
 
                     {/* Ward 1 (Top Left) */}
-                    <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
-                      <rect x="20" y="30" width="70" height="35" rx="6" fill="var(--surface-color)" stroke="var(--border-color)" strokeWidth="1.5" />
-                      <text x="55" y="47" fontSize="7.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 1</text>
-                      <circle cx="55" cy="55" r="3.5" fill={Math.ceil(getVillageStats(officialLocation).unresolved / 2) > 0 ? 'var(--error)' : 'var(--success)'} />
-                    </g>
+                    {(() => {
+                      const total = getVillageStats(officialLocation).unresolved;
+                      const w1 = Math.ceil(total / 3);
+                      return (
+                        <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
+                          <rect x="20" y="10" width="110" height="70" rx="10" fill="var(--surface-color)" stroke={w1 > 0 ? '#EF4444' : 'var(--border-color)'} strokeWidth="2" />
+                          <text x="75" y="30" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 1</text>
+                          <circle cx="75" cy="55" r="18" fill={w1 > 0 ? '#EF4444' : '#22C55E'} />
+                          <text x="75" y="61" fontSize="16" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{w1}</text>
+                          <text x="75" y="76" fontSize="7.5" fontWeight="600" textAnchor="middle" fill="var(--text-secondary)">{w1 === 1 ? '1 complaint' : `${w1} complaints`}</text>
+                          {w1 > 0 && <circle cx="75" cy="55" r="23" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ transformOrigin: '75px 55px', animation: 'pulseRing 1.5s infinite' }} />}
+                        </g>
+                      );
+                    })()}
 
                     {/* Ward 2 (Top Right) */}
-                    <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
-                      <rect x="210" y="30" width="70" height="35" rx="6" fill="var(--surface-color)" stroke="var(--border-color)" strokeWidth="1.5" />
-                      <text x="245" y="47" fontSize="7.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 2</text>
-                      <circle cx="245" cy="55" r="3.5" fill={Math.floor(getVillageStats(officialLocation).unresolved / 2) > 0 ? 'var(--error)' : 'var(--success)'} />
-                    </g>
+                    {(() => {
+                      const total = getVillageStats(officialLocation).unresolved;
+                      const w2 = Math.floor(total / 3);
+                      return (
+                        <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
+                          <rect x="210" y="10" width="110" height="70" rx="10" fill="var(--surface-color)" stroke={w2 > 0 ? '#EF4444' : 'var(--border-color)'} strokeWidth="2" />
+                          <text x="265" y="30" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 2</text>
+                          <circle cx="265" cy="55" r="18" fill={w2 > 0 ? '#EF4444' : '#22C55E'} />
+                          <text x="265" y="61" fontSize="16" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{w2}</text>
+                          <text x="265" y="76" fontSize="7.5" fontWeight="600" textAnchor="middle" fill="var(--text-secondary)">{w2 === 1 ? '1 complaint' : `${w2} complaints`}</text>
+                          {w2 > 0 && <circle cx="265" cy="55" r="23" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ transformOrigin: '265px 55px', animation: 'pulseRing 1.5s infinite' }} />}
+                        </g>
+                      );
+                    })()}
 
                     {/* Ward 3 (Bottom Center) */}
-                    <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
-                      <rect x="115" y="200" width="70" height="35" rx="6" fill="var(--surface-color)" stroke="var(--border-color)" strokeWidth="1.5" />
-                      <text x="150" y="217" fontSize="7.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 3</text>
-                      <circle cx="150" cy="225" r="3.5" fill="var(--success)" />
-                    </g>
+                    {(() => {
+                      const total = getVillageStats(officialLocation).unresolved;
+                      const w3 = total - Math.ceil(total / 3) - Math.floor(total / 3);
+                      return (
+                        <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
+                          <rect x="115" y="245" width="110" height="60" rx="10" fill="var(--surface-color)" stroke={w3 > 0 ? '#EF4444' : 'var(--border-color)'} strokeWidth="2" />
+                          <text x="170" y="263" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 3</text>
+                          <circle cx="170" cy="283" r="14" fill={w3 > 0 ? '#EF4444' : '#22C55E'} />
+                          <text x="170" y="289" fontSize="13" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{w3}</text>
+                          {w3 > 0 && <circle cx="170" cy="283" r="19" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ transformOrigin: '170px 283px', animation: 'pulseRing 1.5s infinite' }} />}
+                        </g>
+                      );
+                    })()}
 
                     {/* Central Hub (Selected Custom Location) */}
                     <g 
                       style={{ cursor: 'pointer' }}
                       onClick={() => setSelectedVillageMap(officialLocation)}
                     >
-                      <rect x="100" y="105" width="100" height="50" rx="8" fill="rgba(37, 99, 235, 0.1)" stroke="var(--primary)" strokeWidth="2" />
-                      <text x="150" y="128" fontSize="8.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">{officialLocation}</text>
-                      
-                      <circle cx="150" cy="140" r="5" fill={getVillageStats(officialLocation).unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                      {getVillageStats(officialLocation).unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
+                      <rect x="100" y="115" width="140" height="70" rx="12" fill="rgba(37, 99, 235, 0.1)" stroke="var(--primary)" strokeWidth="2.5" />
+                      <text x="170" y="137" fontSize="10" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">{officialLocation}</text>
+                      <circle cx="170" cy="162" r="18" fill={getVillageStats(officialLocation).unresolved > 0 ? '#EF4444' : '#22C55E'} />
+                      <text x="170" y="168" fontSize="16" fontWeight="900" textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF">{getVillageStats(officialLocation).unresolved}</text>
+                      {getVillageStats(officialLocation).unresolved > 0 && <circle cx="170" cy="162" r="23" fill="none" stroke="#EF4444" strokeWidth="2" style={{ transformOrigin: '170px 162px', animation: 'pulseRing 1.5s infinite' }} />}
+                      <text x="170" y="180" fontSize="7.5" fontWeight="600" textAnchor="middle" fill="var(--text-secondary)">Total Active</text>
                     </g>
                   </svg>
                 )}
