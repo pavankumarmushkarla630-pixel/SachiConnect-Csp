@@ -760,62 +760,104 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
               </div>
               
               <div style={{ position: 'relative', width: '100%', background: 'var(--hover-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-                <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
-                  {/* Background Connection Paths */}
-                  <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-                  <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
-                  <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+                {['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu'].includes(officialLocation) ? (
+                  <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
+                    {/* Background Connection Paths */}
+                    <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+                    <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
+                    <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--border-color)" strokeWidth="6" strokeLinecap="round" />
 
-                  {/* Animated Glowing Flow Overlays */}
-                  <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-                  <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
-                  <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+                    {/* Animated Glowing Flow Overlays */}
+                    <path d="M 40,20 Q 150,80 260,20" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+                    <path d="M 150,80 Q 70,180 40,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
+                    <path d="M 150,80 Q 220,180 260,220" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" className="gis-flow-path" style={{ opacity: 0.5 }} />
 
-                  {/* Bukkarayasamudram */}
-                  <g 
-                    className="gis-village-region"
-                    style={{ cursor: 'pointer' }} 
-                    onClick={() => setSelectedVillageMap(selectedVillageMap === 'Bukkarayasamudram' ? 'All' : 'Bukkarayasamudram')}
-                    onMouseEnter={() => setHoveredVillage('Bukkarayasamudram')}
-                    onMouseLeave={() => setHoveredVillage(null)}
-                  >
-                    <rect x="180" y="30" width="100" height="50" rx="8" fill={selectedVillageMap === 'Bukkarayasamudram' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Bukkarayasamudram' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                    <text x="230" y="52" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Bukkarayasamudram</text>
-                    
-                    <circle cx="230" cy="65" r="5" fill={bukkStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                    {bukkStats.unresolved > 0 && <circle cx="230" cy="65" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '230px 65px', animation: 'pulseRing 1.5s infinite' }} />}
-                  </g>
+                    {/* Bukkarayasamudram */}
+                    <g 
+                      className="gis-village-region"
+                      style={{ cursor: 'pointer' }} 
+                      onClick={() => setSelectedVillageMap(selectedVillageMap === 'Bukkarayasamudram' ? 'All' : 'Bukkarayasamudram')}
+                      onMouseEnter={() => setHoveredVillage('Bukkarayasamudram')}
+                      onMouseLeave={() => setHoveredVillage(null)}
+                    >
+                      <rect x="180" y="30" width="100" height="50" rx="8" fill={selectedVillageMap === 'Bukkarayasamudram' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Bukkarayasamudram' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
+                      <text x="230" y="52" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Bukkarayasamudram</text>
+                      
+                      <circle cx="230" cy="65" r="5" fill={bukkStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                      {bukkStats.unresolved > 0 && <circle cx="230" cy="65" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '230px 65px', animation: 'pulseRing 1.5s infinite' }} />}
+                    </g>
 
-                  {/* Kothacheruvu */}
-                  <g 
-                    className="gis-village-region"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedVillageMap(selectedVillageMap === 'Kothacheruvu' ? 'All' : 'Kothacheruvu')}
-                    onMouseEnter={() => setHoveredVillage('Kothacheruvu')}
-                    onMouseLeave={() => setHoveredVillage(null)}
-                  >
-                    <rect x="100" y="105" width="100" height="50" rx="8" fill={selectedVillageMap === 'Kothacheruvu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Kothacheruvu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                    <text x="150" y="128" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Kothacheruvu</text>
-                    
-                    <circle cx="150" cy="140" r="5" fill={kothacheruvuStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                    {kothacheruvuStats.unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
-                  </g>
+                    {/* Kothacheruvu */}
+                    <g 
+                      className="gis-village-region"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedVillageMap(selectedVillageMap === 'Kothacheruvu' ? 'All' : 'Kothacheruvu')}
+                      onMouseEnter={() => setHoveredVillage('Kothacheruvu')}
+                      onMouseLeave={() => setHoveredVillage(null)}
+                    >
+                      <rect x="100" y="105" width="100" height="50" rx="8" fill={selectedVillageMap === 'Kothacheruvu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Kothacheruvu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
+                      <text x="150" y="128" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Kothacheruvu</text>
+                      
+                      <circle cx="150" cy="140" r="5" fill={kothacheruvuStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                      {kothacheruvuStats.unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
+                    </g>
 
-                  {/* Rapthadu */}
-                  <g 
-                    className="gis-village-region"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedVillageMap(selectedVillageMap === 'Rapthadu' ? 'All' : 'Rapthadu')}
-                    onMouseEnter={() => setHoveredVillage('Rapthadu')}
-                    onMouseLeave={() => setHoveredVillage(null)}
-                  >
-                    <rect x="20" y="180" width="100" height="50" rx="8" fill={selectedVillageMap === 'Rapthadu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Rapthadu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
-                    <text x="70" y="202" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Rapthadu</text>
-                    
-                    <circle cx="70" cy="215" r="5" fill={rapthaduStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
-                    {rapthaduStats.unresolved > 0 && <circle cx="70" cy="215" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '70px 215px', animation: 'pulseRing 1.5s infinite' }} />}
-                  </g>
-                </svg>
+                    {/* Rapthadu */}
+                    <g 
+                      className="gis-village-region"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedVillageMap(selectedVillageMap === 'Rapthadu' ? 'All' : 'Rapthadu')}
+                      onMouseEnter={() => setHoveredVillage('Rapthadu')}
+                      onMouseLeave={() => setHoveredVillage(null)}
+                    >
+                      <rect x="20" y="180" width="100" height="50" rx="8" fill={selectedVillageMap === 'Rapthadu' ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface-color)'} stroke={selectedVillageMap === 'Rapthadu' ? 'var(--primary)' : 'var(--border-color)'} strokeWidth="1.5" style={{ transition: 'var(--transition-smooth)' }} />
+                      <text x="70" y="202" fontSize="9" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Rapthadu</text>
+                      
+                      <circle cx="70" cy="215" r="5" fill={rapthaduStats.unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                      {rapthaduStats.unresolved > 0 && <circle cx="70" cy="215" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '70px 215px', animation: 'pulseRing 1.5s infinite' }} />}
+                    </g>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto', maxHeight: '350px' }}>
+                    {/* Connection lines from center to wards */}
+                    <path d="M 150,130 L 55,47" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M 150,130 L 245,47" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M 150,130 L 150,217" fill="none" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+
+                    {/* Ward 1 (Top Left) */}
+                    <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
+                      <rect x="20" y="30" width="70" height="35" rx="6" fill="var(--surface-color)" stroke="var(--border-color)" strokeWidth="1.5" />
+                      <text x="55" y="47" fontSize="7.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 1</text>
+                      <circle cx="55" cy="55" r="3.5" fill={Math.ceil(getVillageStats(officialLocation).unresolved / 2) > 0 ? 'var(--error)' : 'var(--success)'} />
+                    </g>
+
+                    {/* Ward 2 (Top Right) */}
+                    <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
+                      <rect x="210" y="30" width="70" height="35" rx="6" fill="var(--surface-color)" stroke="var(--border-color)" strokeWidth="1.5" />
+                      <text x="245" y="47" fontSize="7.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 2</text>
+                      <circle cx="245" cy="55" r="3.5" fill={Math.floor(getVillageStats(officialLocation).unresolved / 2) > 0 ? 'var(--error)' : 'var(--success)'} />
+                    </g>
+
+                    {/* Ward 3 (Bottom Center) */}
+                    <g style={{ cursor: 'pointer' }} onClick={() => setSelectedVillageMap(officialLocation)}>
+                      <rect x="115" y="200" width="70" height="35" rx="6" fill="var(--surface-color)" stroke="var(--border-color)" strokeWidth="1.5" />
+                      <text x="150" y="217" fontSize="7.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">Ward 3</text>
+                      <circle cx="150" cy="225" r="3.5" fill="var(--success)" />
+                    </g>
+
+                    {/* Central Hub (Selected Custom Location) */}
+                    <g 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedVillageMap(officialLocation)}
+                    >
+                      <rect x="100" y="105" width="100" height="50" rx="8" fill="rgba(37, 99, 235, 0.1)" stroke="var(--primary)" strokeWidth="2" />
+                      <text x="150" y="128" fontSize="8.5" fontWeight="800" textAnchor="middle" fill="var(--text-primary)">{officialLocation}</text>
+                      
+                      <circle cx="150" cy="140" r="5" fill={getVillageStats(officialLocation).unresolved > 0 ? 'var(--error)' : 'var(--success)'} />
+                      {getVillageStats(officialLocation).unresolved > 0 && <circle cx="150" cy="140" r="10" fill="none" stroke="var(--error)" strokeWidth="1.5" style={{ transformOrigin: '150px 140px', animation: 'pulseRing 1.5s infinite' }} />}
+                    </g>
+                  </svg>
+                )}
 
                 {/* Dynamic Overlay HUD Tooltip */}
                 {hoveredVillage && (
