@@ -211,6 +211,10 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* Background Gradient Orbs */}
+      <div className="bg-orb bg-orb-1"></div>
+      <div className="bg-orb bg-orb-2"></div>
+
       {/* Toast Notification Banner */}
       {toast.show && <div className="toast">{toast.message}</div>}
 

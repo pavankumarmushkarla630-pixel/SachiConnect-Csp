@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
 import { readDB, writeDB } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -406,6 +407,54 @@ router.post('/complaints', (req, res) => {
 
   return res.status(201).json({ success: true, complaint: newComplaint });
 });
+
+// Client-side logging tunnel for diagnostics
+router.post('/client-logs', (req, res) => {
+  const { message, level } = req.body;
+  console.log(`[CLIENT-LOG] [${level || 'INFO'}] ${message}`);
+  return res.json({ success: true });
+});
+
+// Server-side Speech-to-Text Transcription endpoint using python
+router.post('/transcribe', upload.single('audio'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: "No audio file uploaded" });
+  }
+
+  const audioPath = req.file.path;
+  const language = req.body.language === 'Telugu' ? 'te-IN' : 'en-US';
+
+  const scriptPath = path.join(__dirname, 'transcribe.py');
+  const command = `python "${scriptPath}" "${audioPath}" "${language}"`;
+
+  exec(command, (error, stdout, stderr) => {
+    // Temporarily disabled cleanup for diagnostics
+    /*
+    try {
+      if (fs.existsSync(audioPath)) {
+        fs.unlinkSync(audioPath);
+      }
+    } catch (e) {
+      console.error("Failed to delete temp audio file:", e.message);
+    }
+    */
+
+    if (error) {
+      console.error("Transcription execution error:", error);
+      return res.status(500).json({ success: false, error: "Failed to execute transcription script" });
+    }
+
+    const output = stdout.trim();
+    if (output.startsWith("ERROR:")) {
+      console.warn("Transcription error from script:", output);
+      return res.status(422).json({ success: false, error: output });
+    }
+
+    console.log(`[TRANSCRIBE] Success: "${output}"`);
+    return res.json({ success: true, text: output });
+  });
+});
+
 
 // Update complaint status
 router.put('/complaints/:id/status', (req, res) => {

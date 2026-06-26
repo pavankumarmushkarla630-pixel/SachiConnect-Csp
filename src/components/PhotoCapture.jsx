@@ -76,6 +76,33 @@ export default function PhotoCapture({ language, user, voiceData, audioBlob, onS
     }
   }, []);
 
+  const refreshLocation = () => {
+    setLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+          setLocating(false);
+          showToast(language === 'Telugu' ? "GPS విజయవంతంగా జత చేయబడింది" : "GPS coordinates updated successfully");
+        },
+        (error) => {
+          console.warn("Geolocation access failed:", error);
+          setLocation({ latitude: 14.6819, longitude: 77.6006 });
+          setLocating(false);
+          showToast(t.gpsErr);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      setLocation({ latitude: 14.6819, longitude: 77.6006 });
+      setLocating(false);
+      showToast(t.gpsErr);
+    }
+  };
+
   // Cleanup camera stream on unmount
   useEffect(() => {
     return () => {
@@ -83,13 +110,25 @@ export default function PhotoCapture({ language, user, voiceData, audioBlob, onS
     };
   }, []);
 
+  // Bind camera stream to video element when camera becomes active
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      // Explicitly trigger play to handle autoplay policy in browser sandbox
+      video.play().catch(err => {
+        console.warn("Autoplay was blocked or interrupted:", err);
+      });
+    }
+  }, [cameraActive]);
+
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // Use ideal constraint to prefer back camera but fallback to laptop/front webcam gracefully
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: { ideal: 'environment' } } 
+      });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setCameraActive(true);
     } catch (err) {
       console.warn("Could not open camera:", err);
@@ -109,6 +148,13 @@ export default function PhotoCapture({ language, user, voiceData, audioBlob, onS
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
+      
+      // Ensure video is playing and has valid dimensions
+      if (video.videoWidth <= 0 || video.videoHeight <= 0) {
+        showToast(language === 'Telugu' ? "వీడియో స్ట్రీమ్ ఇంకా లోడ్ కాలేదు" : "Video stream not fully loaded yet.");
+        return;
+      }
+      
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
@@ -207,7 +253,17 @@ export default function PhotoCapture({ language, user, voiceData, audioBlob, onS
             <span className="gps-badge waiting">📡 {t.gpsStatus}</span>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              <span className="gps-badge">✅ {t.gpsSuccess}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="gps-badge">✅ {t.gpsSuccess}</span>
+                <button 
+                  type="button" 
+                  onClick={refreshLocation} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  title={language === 'Telugu' ? 'స్థానాన్ని నవీకరించండి' : 'Refresh location'}
+                >
+                  🔄
+                </button>
+              </div>
               <div style={{ fontSize: '11px', color: 'var(--slate-light)', fontWeight: '600' }}>
                 {t.latitude}: {location.latitude?.toFixed(5)} | {t.longitude}: {location.longitude?.toFixed(5)}
               </div>
@@ -232,7 +288,7 @@ export default function PhotoCapture({ language, user, voiceData, audioBlob, onS
           ) : cameraActive ? (
             /* Show Live Video Stream */
             <div className="camera-preview-box">
-              <video ref={videoRef} autoPlay playsInline className="camera-video"></video>
+              <video ref={videoRef} autoPlay playsInline muted className="camera-video"></video>
               <button 
                 className="btn btn-danger btn-icon-only" 
                 style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', width: '56px', height: '56px' }}

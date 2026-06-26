@@ -1,0 +1,10 @@
+{
+  "verbose": true,
+  "ignore": [
+    "data",
+    "uploads",
+    "*.json",
+    "data/*",
+    "uploads/*"
+  ]
+}
