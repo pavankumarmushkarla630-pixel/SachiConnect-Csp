@@ -744,7 +744,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                     href={`tel:${contact.phone.replace(/\s+/g, '')}`} 
                     className="btn btn-secondary" 
                     style={{ minHeight: '36px', padding: '6px 16px', fontSize: '12.5px' }}
-                    onClick={(e) => { e.preventDefault(); showToast(`Simulating call to ${contact.name}`); }}
+                    onClick={() => { showToast(language === 'Telugu' ? `${contact.name} కి కాల్ ప్రారంభించబడుతోంది...` : `Opening phone dialer for ${contact.name}...`); }}
                   >
                     📞 {t.call}
                   </a>
