@@ -29,6 +29,7 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [currentSelectedLocation, setCurrentSelectedLocation] = useState('');
 
   // Mock Notification Feed
   const [notifications, setNotifications] = useState([
@@ -59,7 +60,11 @@ export default function App() {
       setLanguage(savedLang);
     }
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      if (parsedUser.village) {
+        setCurrentSelectedLocation(parsedUser.village);
+      }
     }
   }, []);
 
@@ -88,6 +93,9 @@ export default function App() {
     setUser(loggedInUser);
     localStorage.setItem('sachivalayam_user', JSON.stringify(loggedInUser));
     showToast(language === 'Telugu' ? "లాగిన్ విజయవంతమైంది" : "Logged in successfully");
+    if (loggedInUser.village) {
+      setCurrentSelectedLocation(loggedInUser.village);
+    }
     if (loggedInUser.role === 'Authority') {
       setActiveScreen('authority-dashboard');
     } else {
@@ -451,6 +459,7 @@ export default function App() {
                   setScreen={setActiveScreen}
                   setSelectedComplaintId={setSelectedComplaintId}
                   showToast={showToast}
+                  onVillageChange={setCurrentSelectedLocation}
                 />
               )}
 
@@ -463,6 +472,7 @@ export default function App() {
                   onCancel={() => setActiveScreen('resident-dashboard')}
                   showToast={showToast}
                   changeLanguage={setLanguage}
+                  selectedVillage={currentSelectedLocation}
                 />
               )}
 

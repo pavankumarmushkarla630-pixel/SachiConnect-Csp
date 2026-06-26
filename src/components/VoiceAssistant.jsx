@@ -53,7 +53,7 @@ const findClosestVillageName = (latitude, longitude, isTelugu) => {
   return isTelugu ? closestTe : closest;
 };
 
-export default function VoiceAssistant({ language, user, onSubmissionComplete, onCancel, showToast, changeLanguage }) {
+export default function VoiceAssistant({ language, user, onSubmissionComplete, onCancel, showToast, changeLanguage, selectedVillage }) {
   const isTelugu = language === 'Telugu';
 
   // Multi-step form state
@@ -63,8 +63,15 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('sachivalayam_form_draft');
     if (saved) { try { return JSON.parse(saved); } catch (e) {} }
-    return { name: user?.name || '', phone: user?.phone || '', village: user?.village || '', category: '', description: '' };
+    return { name: user?.name || '', phone: user?.phone || '', village: selectedVillage || user?.village || '', category: '', description: '' };
   });
+
+  // Sync selectedVillage from dashboard
+  useEffect(() => {
+    if (selectedVillage) {
+      setFormData(prev => ({ ...prev, village: selectedVillage }));
+    }
+  }, [selectedVillage]);
 
   // Geolocation state
   const [coords, setCoords] = useState({ latitude: 14.6819, longitude: 77.6006 });

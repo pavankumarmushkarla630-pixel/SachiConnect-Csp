@@ -33,7 +33,7 @@ const findClosestVillage = (latitude, longitude) => {
   return { name: closest, distance: minDistance };
 };
 
-export default function ResidentDashboard({ user, language, setScreen, setSelectedComplaintId, showToast }) {
+export default function ResidentDashboard({ user, language, setScreen, setSelectedComplaintId, showToast, onVillageChange }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('grievances');
@@ -53,6 +53,13 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
   );
   const [customDistrict, setCustomDistrict] = useState('Anantapur');
   const [customMandal, setCustomMandal] = useState('');
+
+  useEffect(() => {
+    const effectiveVillage = selectedVillage === 'Other' ? customVillage : selectedVillage;
+    if (effectiveVillage) {
+      onVillageChange?.(effectiveVillage);
+    }
+  }, [selectedVillage, customVillage, onVillageChange]);
 
   const t = {
     English: {
