@@ -1,5 +1,37 @@
 import React, { useState, useEffect } from 'react';
 
+const PREDEFINED_VILLAGES = ['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu', 'Pedapenki', 'Duvvada'];
+
+const AP_DISTRICTS = [
+  "Alluri Sitharama Raju", "Anakapalli", "Anantapur", "Annamayya", "Bapatla", 
+  "Chittoor", "East Godavari", "Eluru", "Guntur", "Kakinada", 
+  "Konaseema", "Krishna", "Kurnool", "Nandyal", "NTR", 
+  "Palnadu", "Parvathipuram Manyam", "Prakasam", "Srikakulam", "Sri Potti Sriramulu Nellore", 
+  "Sri Sathya Sai", "Tirupati", "Visakhapatnam", "Vizianagaram", "West Godavari", 
+  "YSR Kadapa"
+];
+
+const VILLAGE_COORDINATES = {
+  'Kothacheruvu': { lat: 14.2016, lng: 77.7818, te: 'కొత్తచెరువు' },
+  'Bukkarayasamudram': { lat: 14.7082, lng: 77.6417, te: 'బుక్కరాయసముద్రం' },
+  'Rapthadu': { lat: 14.6200, lng: 77.6080, te: 'రాప్తాడు' },
+  'Pedapenki': { lat: 18.5284, lng: 83.2982, te: 'పెదపెంకి' },
+  'Duvvada': { lat: 17.6997, lng: 83.1575, te: 'దువ్వాడ' }
+};
+
+const findClosestVillage = (latitude, longitude) => {
+  let closest = 'Kothacheruvu';
+  let minDistance = Infinity;
+  for (const [name, coords] of Object.entries(VILLAGE_COORDINATES)) {
+    const dist = Math.hypot(coords.lat - latitude, coords.lng - longitude);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closest = name;
+    }
+  }
+  return { name: closest, distance: minDistance };
+};
+
 export default function AuthorityDashboard({ user, language, onSelectComplaint, showToast, onLogout }) {
   const [complaints, setComplaints] = useState([]);
   const [analytics, setAnalytics] = useState({ 
@@ -35,6 +67,16 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
 
   const [selectedVillageMap, setSelectedVillageMap] = useState('All'); // GIS Map selection filter
   const [hoveredVillage, setHoveredVillage] = useState(null); // Map hover tooltip state
+
+  const [selectedVillageForm, setSelectedVillageForm] = useState(
+    officialLocation ? (PREDEFINED_VILLAGES.includes(officialLocation) ? officialLocation : 'Other') : 'Kothacheruvu'
+  );
+  const [customVillageForm, setCustomVillageForm] = useState(
+    officialLocation ? (PREDEFINED_VILLAGES.includes(officialLocation) ? '' : officialLocation) : ''
+  );
+  const [customDistrictForm, setCustomDistrictForm] = useState('Anantapur');
+  const [customMandalForm, setCustomMandalForm] = useState('');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   const categories = ["Roads", "Streetlights", "Water Supply", "Drainage", "Sanitation", "Public Facilities", "Other"];
   const statuses = ["Submitted", "Assigned", "In Progress", "Resolved"];
@@ -217,13 +259,98 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const maxStatusVal = statusValues.length > 0 ? Math.max(...statusValues, 1) : 1;
 
   const monthValues = Object.values(analytics.monthlyCount);
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      showToast(language === 'Telugu' ? 'మీ బ్రౌజర్‌లో జీపీఎస్ లొకేషన్ సపోర్ట్ లేదు' : 'GPS location is not supported by your browser');
+      return;
+    }
+    setIsDetectingLocation(true);
+    showToast(language === 'Telugu' ? 'మీ స్థానాన్ని గుర్తిస్తున్నాము...' : 'Detecting your location...');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const closestResult = findClosestVillage(latitude, longitude);
+        const closest = closestResult.name;
+        const distance = closestResult.distance;
+        
+        if (distance < 0.3) {
+          setSelectedVillageForm(closest);
+          showToast(
+            language === 'Telugu'
+              ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : closest === 'Pedapenki' ? 'పెదపెంకి' : 'దువ్వాడ'}`
+              : `Detected Location: ${closest}`
+          );
+          setIsDetectingLocation(false);
+          return;
+        }
+
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`, {
+            headers: {
+              'Accept-Language': language === 'Telugu' ? 'te,en' : 'en'
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            
+            const villageName = addr.village || addr.suburb || addr.town || addr.neighbourhood || addr.hamlet || addr.city || addr.road || '';
+            const mandalName = addr.county || addr.subdistrict || addr.municipality || '';
+            let districtName = addr.state_district || addr.district || '';
+            
+            if (districtName) {
+              const cleanDist = districtName.replace(/\s+District$/i, '').trim();
+              const matchedDist = AP_DISTRICTS.find(d => d.toLowerCase() === cleanDist.toLowerCase() || cleanDist.toLowerCase().includes(d.toLowerCase()));
+              if (matchedDist) {
+                districtName = matchedDist;
+              }
+            }
+            
+            if (villageName) {
+              setSelectedVillageForm('Other');
+              setCustomVillageForm(villageName);
+              if (mandalName) setCustomMandalForm(mandalName);
+              if (districtName) setCustomDistrictForm(districtName);
+              
+              showToast(
+                language === 'Telugu'
+                  ? `స్థానం గుర్తించబడింది: ${villageName}`
+                  : `Location detected: ${villageName}`
+              );
+              setIsDetectingLocation(false);
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed, falling back to closest predefined village:", err);
+        }
+        
+        setSelectedVillageForm(closest);
+        showToast(
+          language === 'Telugu'
+            ? `స్థానం గుర్తించబడింది: ${closest === 'Kothacheruvu' ? 'కొత్తచెరువు' : closest === 'Bukkarayasamudram' ? 'బుక్కరాయసముద్రం' : closest === 'Rapthadu' ? 'రాప్తాడు' : closest === 'Pedapenki' ? 'పెదపెంకి' : 'దువ్వాడ'}`
+            : `Detected Location: ${closest}`
+        );
+        setIsDetectingLocation(false);
+      },
+      (err) => {
+        console.error("Location detection failed:", err);
+        showToast(language === 'Telugu' ? 'లొకేషన్ గుర్తించడం వీలుపడలేదు' : 'Failed to retrieve GPS location');
+        setIsDetectingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handleSetOfficialLocation = (e) => {
     e.preventDefault();
-    const loc = e.target.elements.officialLocSelect.value;
+    const loc = selectedVillageForm === 'Other' ? customVillageForm : selectedVillageForm;
     if (loc) {
       setOfficialLocation(loc);
       localStorage.setItem('sachivalayam_official_location', loc);
       showToast(language === 'Telugu' ? `కార్యాలయ స్థానం దీనికి సెట్ చేయబడింది: ${loc}` : `Jurisdiction set to ${loc}`);
+    } else {
+      showToast(language === 'Telugu' ? `దయచేసి స్థానాన్ని నమోదు చేయండి` : `Please enter/select a location`);
     }
   };
 
@@ -447,34 +574,151 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                   ? 'ఇంటరాక్టివ్ గ్రామ జీఐఎస్ మ్యాప్‌ను చూడటానికి, దయచేసి మీ కేటాయించిన గ్రామ సచివాలయాన్ని ఎంచుకోండి.' 
                   : 'To view the interactive Village GIS Hotspot Map, please select your assigned village secretariat.'}
               </p>
-              <form onSubmit={handleSetOfficialLocation} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <select 
-                  name="officialLocSelect"
-                  className="form-control"
-                  style={{ 
-                    padding: '12px 14px', 
-                    borderRadius: '12px', 
-                    border: '1.5px solid var(--border-color)', 
-                    background: 'var(--surface-color)', 
-                    color: 'var(--text-primary)', 
-                    fontWeight: '700', 
-                    fontSize: '14.5px', 
-                    outline: 'none',
-                    cursor: 'pointer',
-                    height: '48px'
-                  }}
-                  required
-                >
-                  <option value="">{language === 'Telugu' ? '-- సచివాలయాన్ని ఎంచుకోండి --' : '-- Select Secretariat --'}</option>
-                  <option value="Kothacheruvu">Kothacheruvu (కొత్తచెరువు)</option>
-                  <option value="Bukkarayasamudram">Bukkarayasamudram (బుక్కరాయసముద్రం)</option>
-                  <option value="Rapthadu">Rapthadu (రాప్తాడు)</option>
-                </select>
+              <form onSubmit={handleSetOfficialLocation} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    📍 {language === 'Telugu' ? 'గ్రామ సచివాలయాన్ని ఎంచుకోండి' : 'Select Village Secretariat'}
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <select 
+                      value={selectedVillageForm}
+                      onChange={(e) => setSelectedVillageForm(e.target.value)}
+                      className="form-control"
+                      style={{ 
+                        flex: 1,
+                        padding: '12px 14px', 
+                        borderRadius: '12px', 
+                        border: '1.5px solid var(--border-color)', 
+                        background: 'var(--surface-color)', 
+                        color: 'var(--text-primary)', 
+                        fontWeight: '700', 
+                        fontSize: '14.5px', 
+                        outline: 'none',
+                        cursor: 'pointer',
+                        height: '46px'
+                      }}
+                      required
+                    >
+                      <option value="Kothacheruvu">Kothacheruvu (కొత్తచెరువు)</option>
+                      <option value="Bukkarayasamudram">Bukkarayasamudram (బుక్కరాయసముద్రం)</option>
+                      <option value="Rapthadu">Rapthadu (రాప్తాడు)</option>
+                      <option value="Pedapenki">Pedapenki (పెదపెంకి)</option>
+                      <option value="Duvvada">Duvvada (దువ్వాడ)</option>
+                      <option value="Other">{language === 'Telugu' ? 'ఇతర గ్రామం / ప్రాంతం' : 'Other / Select Any Location'}</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={handleDetectLocation}
+                      disabled={isDetectingLocation}
+                      className="btn btn-secondary"
+                      style={{ 
+                        padding: '12px 16px', 
+                        borderRadius: '12px', 
+                        fontWeight: '700', 
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap',
+                        height: '46px',
+                        borderColor: 'var(--border-color)',
+                        background: 'var(--hover-bg)',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📍 {isDetectingLocation ? (language === 'Telugu' ? 'గుర్తిస్తోంది...' : 'Detecting...') : (language === 'Telugu' ? 'లొకేషన్ గుర్తించు' : 'Detect Location')}
+                    </button>
+                  </div>
+                </div>
+
+                {selectedVillageForm === 'Other' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '4px', animation: 'stepEnter 0.3s ease-out' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          🏢 {language === 'Telugu' ? 'జిల్లా' : 'District'}
+                        </label>
+                        <select
+                          value={customDistrictForm}
+                          onChange={(e) => setCustomDistrictForm(e.target.value)}
+                          className="form-control"
+                          style={{ 
+                            padding: '12px 14px', 
+                            borderRadius: '12px', 
+                            border: '1.5px solid var(--border-color)', 
+                            background: 'var(--surface-color)', 
+                            color: 'var(--text-primary)', 
+                            fontWeight: '700', 
+                            fontSize: '14px', 
+                            outline: 'none',
+                            cursor: 'pointer',
+                            height: '46px'
+                          }}
+                        >
+                          {AP_DISTRICTS.map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          🏛️ {language === 'Telugu' ? 'మండలం' : 'Mandal'}
+                        </label>
+                        <input
+                          type="text"
+                          value={customMandalForm}
+                          onChange={(e) => setCustomMandalForm(e.target.value)}
+                          placeholder={language === 'Telugu' ? 'ఉదా. కొత్తచెరువు' : 'e.g. Kothacheruvu'}
+                          className="form-control"
+                          style={{ 
+                            padding: '12px 14px', 
+                            borderRadius: '12px', 
+                            border: '1.5px solid var(--border-color)', 
+                            background: 'var(--surface-color)', 
+                            color: 'var(--text-primary)', 
+                            fontWeight: '700', 
+                            fontSize: '14px', 
+                            outline: 'none',
+                            height: '46px'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        🏘️ {language === 'Telugu' ? 'గ్రామం / ప్రాంతం' : 'Village / Area'}
+                      </label>
+                      <input
+                        type="text"
+                        value={customVillageForm}
+                        onChange={(e) => setCustomVillageForm(e.target.value)}
+                        placeholder={language === 'Telugu' ? 'గ్రామం పేరు నమోదు చేయండి' : 'Enter village or area name'}
+                        className="form-control"
+                        style={{ 
+                          padding: '12px 14px', 
+                          borderRadius: '12px', 
+                          border: '1.5px solid var(--border-color)', 
+                          background: 'var(--surface-color)', 
+                          color: 'var(--text-primary)', 
+                          fontWeight: '700', 
+                          fontSize: '14px', 
+                          outline: 'none',
+                          height: '46px'
+                        }}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
                 
                 <button 
                   type="submit" 
                   className="btn btn-primary" 
-                  style={{ padding: '12px', borderRadius: '12px', fontWeight: '800', fontSize: '14.5px', height: '48px', background: '#2563EB', border: 'none', color: '#fff', cursor: 'pointer' }}
+                  style={{ padding: '12px', borderRadius: '12px', fontWeight: '800', fontSize: '14.5px', height: '48px', background: '#2563EB', border: 'none', color: '#fff', cursor: 'pointer', marginTop: '10px' }}
                 >
                   {language === 'Telugu' ? 'ధృవీకరించండి & మ్యాప్ చూడండి' : 'Confirm & View GIS Map'}
                 </button>
