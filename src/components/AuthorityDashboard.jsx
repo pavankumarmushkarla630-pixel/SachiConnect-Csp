@@ -259,6 +259,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const maxStatusVal = statusValues.length > 0 ? Math.max(...statusValues, 1) : 1;
 
   const monthValues = Object.values(analytics.monthlyCount);
+  const maxMonthVal = monthValues.length > 0 ? Math.max(...monthValues, 1) : 1;
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       showToast(language === 'Telugu' ? 'మీ బ్రౌజర్‌లో జీపీఎస్ లొకేషన్ సపోర్ట్ లేదు' : 'GPS location is not supported by your browser');
