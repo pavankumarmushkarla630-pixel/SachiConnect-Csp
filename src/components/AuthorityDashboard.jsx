@@ -47,7 +47,12 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [priorityFilter, setPriorityFilter] = useState('All');
+  const [sortByPriority, setSortByPriority] = useState(false);
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'map', or 'analytics'
+  const [showEmergencyEmailModal, setShowEmergencyEmailModal] = useState(false);
+  const [emergencyAlerts, setEmergencyAlerts] = useState([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [officialLocation, setOfficialLocation] = useState(() => {
     const saved = localStorage.getItem('sachivalayam_official_location');
     if (saved) return saved;
@@ -79,7 +84,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   const categories = ["Roads", "Streetlights", "Water Supply", "Drainage", "Sanitation", "Public Facilities", "Other"];
-  const statuses = ["Submitted", "Assigned", "In Progress", "Resolved"];
+  const statuses = ["Submitted", "Pending", "In Progress", "Resolved"];
 
   const t = {
     English: {
@@ -90,11 +95,16 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
       tabAnalytics: "Analytics & Reports",
       total: "Total Complaints",
       submitted: "Submitted",
+      pending: "Pending",
       inProgress: "In Progress",
       resolved: "Resolved",
       searchPlaceholder: "Search by ID, resident name, or village...",
       filterStatus: "Status",
       filterCategory: "Category",
+      filterPriority: "Priority",
+      allPriorities: "All Priorities",
+      sortPriorityBtn: "⚡ Urgent First",
+      sortDateBtn: "📅 Newest First",
       noComplaints: "No complaints found.",
       id: "ID",
       resident: "Resident",
@@ -105,6 +115,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
       charts: {
         byCat: "Complaints by Category",
         byStatus: "Complaints by Status",
+        byPriority: "Complaints by Problem Complexity & Priority",
         monthly: "Monthly Grievance Inflow",
         ratingTitle: "Resident Satisfaction Rating",
         recentReviews: "Recent Resident Reviews",
@@ -124,11 +135,16 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
       tabAnalytics: "విశ్లేషణలు & నివేదికలు",
       total: "మొత్తం ఫిర్యాదులు",
       submitted: "సమర్పించబడినవి",
+      pending: "పెండింగ్‌లో ఉన్నవి",
       inProgress: "ప్రక్రియలో ఉన్నవి",
       resolved: "పరిష్కరించబడినవి",
       searchPlaceholder: "ID, నివాసి పేరు లేదా గ్రామం ద్వారా శోధించండి...",
       filterStatus: "స్థితి",
       filterCategory: "వర్గం",
+      filterPriority: "ప్రాధాన్యత",
+      allPriorities: "అన్ని ప్రాధాన్యతలు",
+      sortPriorityBtn: "⚡ అత్యవసర క్రమం",
+      sortDateBtn: "📅 తేదీ క్రమం",
       noComplaints: "ఫిర్యాదులు ఏవీ కనుగొనబడలేదు.",
       id: "ఐడి",
       resident: "నివాసి",
@@ -139,6 +155,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
       charts: {
         byCat: "వర్గం వారీగా ఫిర్యాదులు",
         byStatus: "స్థితి వారీగా ఫిర్యాదులు",
+        byPriority: "సమస్య తీవ్రత / ప్రాధాన్యత వారీగా",
         monthly: "నెలవారీ ఫిర్యాదుల ప్రవాహం",
         ratingTitle: "నివాసితుల సంతృప్తి రేటింగ్",
         recentReviews: "ఇటీవలి నివాసితుల సమీక్షలు",
@@ -163,6 +180,10 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
     searchPlaceholder: "Search by ID, resident name, or village...",
     filterStatus: "Status",
     filterCategory: "Category",
+    filterPriority: "Priority",
+    allPriorities: "All Priorities",
+    sortPriorityBtn: "⚡ Urgent First",
+    sortDateBtn: "📅 Newest First",
     noComplaints: "No complaints found.",
     id: "ID",
     resident: "Resident",
@@ -173,6 +194,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
     charts: {
       byCat: "Complaints by Category",
       byStatus: "Complaints by Status",
+      byPriority: "Complaints by Problem Complexity & Priority",
       monthly: "Monthly Grievance Inflow",
       ratingTitle: "Resident Satisfaction Rating",
       recentReviews: "Recent Resident Reviews",
@@ -211,7 +233,30 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
     }
   };
 
-  // Filter complaints list
+  const handleOpenEmergencyAlerts = async () => {
+    setShowEmergencyEmailModal(true);
+    setLoadingAlerts(true);
+    try {
+      const res = await fetch('/api/emergency-alerts');
+      if (res.ok) {
+        const data = await res.json();
+        setEmergencyAlerts(data.alerts || []);
+      }
+    } catch (e) {
+      console.error("Failed to load emergency email alerts:", e);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  };
+
+  // Active Critical Complaints (requiring emergency action)
+  const criticalComplaints = complaints.filter(c => 
+    (c.complexity === 'Critical' || c.priority === 'Critical') && c.status !== 'Resolved'
+  );
+
+  // Filter and sort complaints list
+  const priorityWeights = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Normal': 1, 'Low': 1 };
+
   const filteredComplaints = complaints.filter(c => {
     const matchesSearch = c.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           c.resident_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -220,14 +265,25 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
     
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
     const matchesCategory = categoryFilter === 'All' || c.complaint_category === categoryFilter;
+    const pVal = c.complexity || c.priority || 'Medium';
+    const matchesPriority = priorityFilter === 'All' || 
+      (priorityFilter === 'Normal' ? (pVal === 'Normal' || pVal === 'Low') : pVal === priorityFilter);
     const matchesMapVillage = selectedVillageMap === 'All' || c.village_area.toLowerCase() === selectedVillageMap.toLowerCase();
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesMapVillage;
+    return matchesSearch && matchesStatus && matchesCategory && matchesPriority && matchesMapVillage;
+  }).sort((a, b) => {
+    if (sortByPriority) {
+      const pDiff = (priorityWeights[b.complexity || b.priority || 'Medium'] || 2) - 
+                    (priorityWeights[a.complexity || a.priority || 'Medium'] || 2);
+      if (pDiff !== 0) return pDiff;
+    }
+    return new Date(b.created_at) - new Date(a.created_at);
   });
 
   const getStatusClass = (status) => {
     switch (status) {
       case 'Submitted': return 'status-submitted';
+      case 'Pending': return 'status-pending';
       case 'Assigned': return 'status-assigned';
       case 'In Progress': return 'status-in-progress';
       case 'Resolved': return 'status-resolved';
@@ -252,13 +308,16 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
   const bukkStats = getVillageStats('Bukkarayasamudram');
 
   // Pre-calculate max counts for CSS bar charts proportions
-  const catValues = Object.values(analytics.byCategory);
+  const catValues = Object.values(analytics.byCategory || {});
   const maxCatVal = catValues.length > 0 ? Math.max(...catValues, 1) : 1;
 
-  const statusValues = Object.values(analytics.byStatus);
+  const statusValues = Object.values(analytics.byStatus || {});
   const maxStatusVal = statusValues.length > 0 ? Math.max(...statusValues, 1) : 1;
 
-  const monthValues = Object.values(analytics.monthlyCount);
+  const priorityValues = Object.values(analytics.byPriority || {});
+  const maxPriorityVal = priorityValues.length > 0 ? Math.max(...priorityValues, 1) : 1;
+
+  const monthValues = Object.values(analytics.monthlyCount || {});
   const maxMonthVal = monthValues.length > 0 ? Math.max(...monthValues, 1) : 1;
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -367,6 +426,50 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
         </div>
       </div>
 
+      {/* 🚨 ACTIVE EMERGENCY DISPATCH PROTOCOL BAR */}
+      {criticalComplaints.length > 0 && (
+        <div className="emergency-siren-banner">
+          <div className="emergency-siren-icon">🚨</div>
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="emergency-siren-badge">EMERGENCY PROTOCOL ACTIVE</span>
+              <span style={{ fontSize: '14.5px', fontWeight: '900', color: '#DC2626' }}>
+                {language === 'Telugu' 
+                  ? `${criticalComplaints.length} అత్యవసర ఫిర్యాదు(లు) తక్షణ ఫీల్డ్ బృందం చర్య అవసరం!` 
+                  : `${criticalComplaints.length} Critical Emergency Grievance(s) Require Immediate Field Dispatch!`}
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '500' }}>
+              {language === 'Telugu'
+                ? 'అడ్మిన్ మరియు జిల్లా అధికారులకు ఆటోమేటిక్ అత్యవసర ఈమెయిల్ అలర్ట్ పంపబడింది (admin.sachivalayam@ap.gov.in). 2 గంటల తక్షణ స్పందన ఎస్.ఎల్.ఎ వర్తిస్తుంది.'
+                : 'Automated emergency email alert dispatched to District Admin & Nodal Officers (admin.sachivalayam@ap.gov.in). 2-hour response SLA applies.'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-danger"
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => {
+                setActiveTab('list');
+                setPriorityFilter('Critical');
+                setSortByPriority(true);
+              }}
+            >
+              ⚡ {language === 'Telugu' ? 'అత్యవసర జాబితా' : 'View Emergencies'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              onClick={handleOpenEmergencyAlerts}
+            >
+              📧 {language === 'Telugu' ? 'ఈమెయిల్ లాగ్' : 'Email Alerts Log'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* KPI Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card total">
@@ -375,7 +478,11 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
         </div>
         <div className="stat-card submitted">
           <span className="stat-label">{t.submitted}</span>
-          <span className="stat-value">{(analytics.byStatus?.Submitted || 0) + (analytics.byStatus?.Assigned || 0)}</span>
+          <span className="stat-value">{analytics.byStatus?.Submitted || 0}</span>
+        </div>
+        <div className="stat-card pending">
+          <span className="stat-label">{t.pending}</span>
+          <span className="stat-value">{(analytics.byStatus?.Pending || 0) + (analytics.byStatus?.Assigned || 0)}</span>
         </div>
         <div className="stat-card in-progress">
           <span className="stat-label">{t.inProgress}</span>
@@ -449,19 +556,51 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
               
               {/* Search */}
-              <div style={{ flex: '1 1 300px' }}>
+              <div style={{ flex: '1 1 320px', display: 'flex', gap: '8px' }}>
                 <input 
                   type="text" 
                   className="form-control" 
                   placeholder={t.searchPlaceholder} 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const query = searchTerm.trim().toLowerCase();
+                      const scQuery = query.startsWith('sc-') ? query : `sc-${query}`;
+                      const match = complaints.find(c => {
+                        const cid = (c.id || '').toLowerCase();
+                        return cid === query || cid === scQuery;
+                      });
+                      if (match) {
+                        onSelectComplaint(match.id);
+                      }
+                    }
+                  }}
                   style={{ padding: '10px 14px', fontSize: '14px' }}
                 />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '13px', fontWeight: '800', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+                  onClick={() => {
+                    const query = searchTerm.trim().toLowerCase();
+                    const scQuery = query.startsWith('sc-') ? query : `sc-${query}`;
+                    const match = complaints.find(c => {
+                      const cid = (c.id || '').toLowerCase();
+                      return cid === query || cid === scQuery;
+                    });
+                    if (match) {
+                      onSelectComplaint(match.id);
+                    }
+                  }}
+                  title={language === 'Telugu' ? "శోధించండి" : "Search"}
+                >
+                  <span>🔍</span> {language === 'Telugu' ? "శోధించండి" : "Search"}
+                </button>
               </div>
 
               {/* Status Filter */}
-              <div style={{ flex: '1 1 150px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ flex: '1 1 140px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>{t.filterStatus}:</span>
                 <select 
                   className="form-control" 
@@ -478,7 +617,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
               </div>
 
               {/* Category Filter */}
-              <div style={{ flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ flex: '1 1 160px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>{t.filterCategory}:</span>
                 <select 
                   className="form-control" 
@@ -492,6 +631,47 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                   ))}
                 </select>
               </div>
+
+              {/* Priority / Complexity Filter */}
+              <div style={{ flex: '1 1 160px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>{t.filterPriority}:</span>
+                <select 
+                  className="form-control" 
+                  value={priorityFilter} 
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  style={{ padding: '8px 10px', fontSize: '13px' }}
+                >
+                  <option value="All">{t.allPriorities}</option>
+                  <option value="Critical">🔴 {language === 'Telugu' ? 'అత్యవసరం (Critical - Emergency)' : 'Critical (Emergency)'}</option>
+                  <option value="High">🟠 {language === 'Telugu' ? 'అధికం (High Priority)' : 'High Priority'}</option>
+                  <option value="Medium">🟡 {language === 'Telugu' ? 'మధ్యస్థం (Medium Priority)' : 'Medium Priority'}</option>
+                  <option value="Normal">🟢 {language === 'Telugu' ? 'సాధారణం (Normal)' : 'Normal / Routine'}</option>
+                </select>
+              </div>
+
+              {/* Quick Prioritize Urgent Toggle */}
+              <button
+                type="button"
+                onClick={() => setSortByPriority(prev => !prev)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  border: sortByPriority ? '1.5px solid #DC2626' : '1px solid var(--border-color)',
+                  background: sortByPriority ? 'rgba(239, 68, 68, 0.1)' : 'var(--surface-color)',
+                  color: sortByPriority ? '#DC2626' : 'var(--text-secondary)',
+                  fontSize: '12px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s ease'
+                }}
+                title={language === 'Telugu' ? 'అత్యవసర సమస్యలను త్వరగా పరిష్కరించేందుకు ముందుగా చూపించు' : 'Sort Critical and High urgency issues to the top to resolve quickly'}
+              >
+                {sortByPriority ? t.sortDateBtn : t.sortPriorityBtn}
+              </button>
 
               {/* GIS Map Filter Banner */}
               {selectedVillageMap !== 'All' && (
@@ -518,6 +698,7 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                   <th>{t.resident}</th>
                   <th>{t.village}</th>
                   <th>{t.filterCategory}</th>
+                  <th>{t.filterPriority}</th>
                   <th>{t.filterStatus}</th>
                   <th>{t.date}</th>
                   <th style={{ textAlign: 'center' }}>{t.actions}</th>
@@ -526,36 +707,51 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
               <tbody>
                 {filteredComplaints.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                    <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
                       {t.noComplaints}
                     </td>
                   </tr>
                 ) : (
-                  filteredComplaints.map(c => (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: '800', fontSize: '14px' }}>{c.id}</td>
-                      <td style={{ fontWeight: '500' }}>{c.resident_name}</td>
-                      <td>📍 {c.village_area}</td>
-                      <td style={{ fontWeight: '600', color: 'var(--primary)' }}>{c.complaint_category}</td>
-                      <td>
-                        <span className={`status-pill ${getStatusClass(c.status)}`} style={{ fontSize: '11px' }}>
-                          {c.status}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button 
-                          className="btn btn-primary" 
-                          style={{ padding: '6px 14px', fontSize: '12px', minHeight: '32px' }}
-                          onClick={() => onSelectComplaint(c.id)}
-                        >
-                          {t.viewDetails}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  filteredComplaints.map(c => {
+                    const rawP = c.complexity || c.priority || 'Medium';
+                    const priorityVal = rawP === 'Low' ? 'Normal' : rawP;
+                    const isCritical = priorityVal === 'Critical';
+                    return (
+                      <tr key={c.id} style={isCritical ? { background: 'rgba(239, 68, 68, 0.05)', borderLeft: '4px solid #DC2626' } : {}}>
+                        <td style={{ fontWeight: '800', fontSize: '14px' }}>
+                          {c.id}
+                          {isCritical && <span style={{ marginLeft: '6px', fontSize: '13px' }} title="Critical Emergency">🚨</span>}
+                        </td>
+                        <td style={{ fontWeight: '500' }}>{c.resident_name}</td>
+                        <td>📍 {c.village_area}</td>
+                        <td style={{ fontWeight: '600', color: 'var(--primary)' }}>{c.complaint_category}</td>
+                        <td>
+                          <span className={`priority-pill priority-${priorityVal.toLowerCase()}`}>
+                            {priorityVal === 'Critical' ? (language === 'Telugu' ? '🚨 అత్యవసరం (Emergency)' : '🚨 Critical (Emergency)') :
+                             priorityVal === 'High' ? '🟠 High' :
+                             priorityVal === 'Medium' ? '🟡 Medium' : '🟢 Normal'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(c.status)}`} style={{ fontSize: '11px' }}>
+                            {c.status}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          {new Date(c.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button 
+                            className="btn btn-primary" 
+                            style={{ padding: '6px 14px', fontSize: '12px', minHeight: '32px' }}
+                            onClick={() => onSelectComplaint(c.id)}
+                          >
+                            {t.viewDetails}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -1047,6 +1243,31 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
               </div>
             </div>
 
+            {/* Complexity & Priority Chart */}
+            <div className="chart-box">
+              <h3 className="chart-title">⚡ {t.charts.byPriority}</h3>
+              <div className="bar-chart">
+                {[
+                  { id: 'Critical', label: language === 'Telugu' ? 'అత్యవసరం (Critical - Emergency)' : 'Critical (Emergency)', color: '#DC2626' },
+                  { id: 'High', label: language === 'Telugu' ? 'అధికం (High)' : 'High Priority', color: '#EA580C' },
+                  { id: 'Medium', label: language === 'Telugu' ? 'మధ్యస్థం (Medium)' : 'Medium Priority', color: '#2563EB' },
+                  { id: 'Normal', label: language === 'Telugu' ? 'సాధారణం (Normal)' : 'Normal / Routine', color: '#16A34A' }
+                ].map(p => {
+                  const count = (analytics.byPriority?.[p.id] || 0) + (p.id === 'Normal' ? (analytics.byPriority?.Low || 0) : 0);
+                  const widthPercent = (count / maxPriorityVal) * 100;
+                  return (
+                    <div key={p.id} className="bar-row">
+                      <span className="bar-label" style={{ color: 'var(--text-primary)' }}>{p.label}</span>
+                      <div className="bar-wrapper">
+                        <div className="bar-fill" style={{ width: `${widthPercent}%`, background: p.color }}></div>
+                      </div>
+                      <span className="bar-value" style={{ fontWeight: '800', color: p.color }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Feedback Reviews feed */}
             <div className="chart-box" style={{ gridColumn: 'span 1' }}>
               <h3 className="chart-title">✍️ {t.charts.recentReviews}</h3>
@@ -1099,6 +1320,146 @@ export default function AuthorityDashboard({ user, language, onSelectComplaint, 
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📧 EMERGENCY EMAIL ALERTS LOG MODAL */}
+      {showEmergencyEmailModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050,
+          padding: '16px'
+        }}>
+          <div className="card" style={{
+            maxWidth: '720px',
+            width: '100%',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            padding: '28px',
+            borderRadius: '20px',
+            position: 'relative',
+            background: 'var(--surface-color)',
+            boxShadow: '0 20px 45px rgba(0,0,0,0.3)',
+            border: '2px solid rgba(220, 38, 38, 0.4)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '24px' }}>🚨</span>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '850', color: '#DC2626', margin: 0 }}>
+                    {language === 'Telugu' ? 'అత్యవసర ఈమెయిల్ అలర్ట్ లాగ్' : 'Official Emergency Email Alerts Dispatch Log'}
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                    {language === 'Telugu' 
+                      ? 'క్లిష్టమైన అత్యవసర ఫిర్యాదులకు జిల్లా కలెక్టరేట్ & అడ్మిన్‌కు పంపబడిన అధికారిక ఈమెయిల్‌లు' 
+                      : 'Records of high-priority emails dispatched to District Administration & Nodal Engineers'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowEmergencyEmailModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {loadingAlerts ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+                Loading dispatched alerts...
+              </div>
+            ) : emergencyAlerts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: '36px', marginBottom: '10px' }}>📬</div>
+                <div style={{ fontSize: '15px', fontWeight: '700' }}>No emergency email alerts logged yet.</div>
+                <p style={{ fontSize: '12.5px', marginTop: '4px' }}>When a citizen files a Critical Emergency grievance, instant dispatch records will appear here.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {emergencyAlerts.map((alert, idx) => (
+                  <div key={idx} style={{
+                    border: '1.5px solid rgba(220, 38, 38, 0.25)',
+                    borderRadius: '14px',
+                    padding: '16px',
+                    background: 'var(--hover-bg)',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                      <div>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          fontWeight: '800', 
+                          padding: '2px 8px', 
+                          borderRadius: '12px', 
+                          background: 'rgba(220, 38, 38, 0.15)', 
+                          color: '#DC2626',
+                          letterSpacing: '0.5px'
+                        }}>
+                          {alert.priority || 'CRITICAL'} ALERT #{alert.alert_id || idx + 1}
+                        </span>
+                        <span style={{ marginLeft: '8px', fontWeight: '800', fontSize: '13.5px', color: 'var(--text-primary)' }}>
+                          Complaint #{alert.complaint_id}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                        📅 {new Date(alert.dispatched_at).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '12.5px', fontWeight: '750', color: '#1E40AF', marginBottom: '6px' }}>
+                      {alert.subject}
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px', marginBottom: '10px' }}>
+                      <div><strong>To:</strong> {alert.to}</div>
+                      <div><strong>CC:</strong> {alert.cc}</div>
+                      <div><strong>Delivery Status:</strong> <span style={{ color: '#16A34A', fontWeight: '700' }}>✅ {alert.status}</span></div>
+                    </div>
+
+                    <pre style={{
+                      background: 'var(--surface-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      fontSize: '11.5px',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      color: 'var(--text-primary)',
+                      maxHeight: '160px',
+                      overflowY: 'auto',
+                      lineHeight: '1.4'
+                    }}>
+                      {alert.body_text}
+                    </pre>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                        onClick={() => {
+                          setShowEmergencyEmailModal(false);
+                          onSelectComplaint(alert.complaint_id);
+                        }}
+                      >
+                        Inspect Grievance #{alert.complaint_id} →
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

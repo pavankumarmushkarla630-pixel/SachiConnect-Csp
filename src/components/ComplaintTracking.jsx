@@ -14,8 +14,8 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
       title: "Grievance Status",
       subtitle: "Track the real-time resolution timeline of your complaint",
       detailsCard: "Grievance Details",
-      id: "Complaint ID",
       category: "Category",
+      priority: "Problem Complexity / Priority",
       village: "Village Area",
       date: "Date Submitted",
       status: "Current Status",
@@ -37,6 +37,7 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
       detailsCard: "ఫిర్యాదు వివరాలు",
       id: "ఫిర్యాదు ఐడి (ID)",
       category: "వర్గం",
+      priority: "సమస్య సంక్లిష్టత / ప్రాధాన్యత",
       village: "గ్రామం / ప్రాంతం",
       date: "సమర్పించిన తేదీ",
       status: "ప్రస్తుత స్థితి",
@@ -143,10 +144,11 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
     );
   }
 
-  const timelineStages = ["Submitted", "Assigned", "In Progress", "Resolved"];
+  const timelineStages = ["Submitted", "Pending", "In Progress", "Resolved"];
   
   const getStageStatus = (stage) => {
-    const currentStatus = complaint.status;
+    const rawStatus = complaint.status;
+    const currentStatus = rawStatus === 'Assigned' ? 'Pending' : rawStatus;
     const currentIdx = timelineStages.indexOf(currentStatus);
     const stageIdx = timelineStages.indexOf(stage);
 
@@ -158,6 +160,7 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
   const getStatusClass = (status) => {
     switch (status) {
       case 'Submitted': return 'status-submitted';
+      case 'Pending': return 'status-pending';
       case 'Assigned': return 'status-assigned';
       case 'In Progress': return 'status-in-progress';
       case 'Resolved': return 'status-resolved';
@@ -178,6 +181,33 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
         </div>
       </div>
 
+      {/* Emergency Alert Banner for Resident */}
+      {((complaint.complexity || complaint.priority) === 'Critical') && (
+        <div style={{
+          padding: '14px 18px',
+          borderRadius: '14px',
+          background: 'rgba(239, 68, 68, 0.08)',
+          border: '1.5px solid rgba(239, 68, 68, 0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '20px',
+          textAlign: 'left'
+        }}>
+          <span style={{ fontSize: '24px' }}>🚨</span>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: '900', color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              {language === 'Telugu' ? 'అత్యవసర ప్రాధాన్యత కేటాయించబడింది' : 'CRITICAL EMERGENCY ESCALATION ACTIVE'}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-primary)', marginTop: '2px', lineHeight: '1.4' }}>
+              {language === 'Telugu'
+                ? 'మీ ఫిర్యాదు అత్యవసర కేటగిరీలో నమోదైంది. జిల్లా అడ్మిన్ మరియు మండల అధికారులకు ఆటోమేటిక్ ఈమెయిల్ అలర్ట్ పంపబడింది.'
+                : 'Your grievance is registered with highest emergency priority. Officials & Mandal Administration have been notified via automated emergency alert email.'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Details Card */}
       <div className="card" style={{ padding: '20px', textAlign: 'left', background: 'var(--surface-color)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', marginBottom: '18px' }}>
@@ -185,15 +215,40 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.id}</div>
             <div style={{ fontSize: '18px', fontWeight: '850', color: 'var(--text-primary)', marginTop: '2px' }}>{complaint.id}</div>
           </div>
-          <span className={`status-pill ${getStatusClass(complaint.status)}`}>
-            {complaint.status}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {(() => {
+              const rawP = complaint.complexity || complaint.priority || 'Medium';
+              const pVal = rawP === 'Low' ? 'Normal' : rawP;
+              return (
+                <span className={`priority-pill priority-${pVal.toLowerCase()}`}>
+                  {pVal === 'Critical' ? '🚨 Critical' : pVal === 'High' ? '🟠 High' : pVal === 'Medium' ? '🟡 Medium' : '🟢 Normal'}
+                </span>
+              );
+            })()}
+            <span className={`status-pill ${getStatusClass(complaint.status)}`}>
+              {complaint.status}
+            </span>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.category}</div>
             <div style={{ fontSize: '14.5px', fontWeight: '800', color: 'var(--primary)', marginTop: '2px' }}>{complaint.complaint_category}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.priority}</div>
+            <div style={{ marginTop: '4px' }}>
+              {(() => {
+                const rawP = complaint.complexity || complaint.priority || 'Medium';
+                const pVal = rawP === 'Low' ? 'Normal' : rawP;
+                return (
+                  <span className={`priority-pill priority-${pVal.toLowerCase()}`}>
+                    {pVal === 'Critical' ? '🚨 Critical' : pVal === 'High' ? '🟠 High' : pVal === 'Medium' ? '🟡 Medium' : '🟢 Normal'}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.date}</div>
@@ -222,6 +277,31 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
               alt="Evidence attachment" 
               style={{ width: '100%', borderRadius: '14px', border: '1px solid var(--border-color)', aspectRatio: '4/3', objectFit: 'cover' }} 
             />
+          </div>
+        )}
+
+        {/* Live Status Reason Alert (Why In Progress or Pending) */}
+        {(complaint.status === 'In Progress' || complaint.status === 'Pending' || complaint.status === 'Assigned') && (
+          <div style={{
+            marginTop: '16px',
+            padding: '14px 16px',
+            borderRadius: '12px',
+            background: complaint.status === 'In Progress' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(139, 92, 246, 0.08)',
+            borderLeft: `4px solid ${complaint.status === 'In Progress' ? '#F59E0B' : '#8B5CF6'}`,
+            borderTop: '1px solid var(--border-color)',
+            borderRight: '1px solid var(--border-color)',
+            borderBottom: '1px solid var(--border-color)'
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: '850', color: complaint.status === 'In Progress' ? '#D97706' : '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+              ℹ️ {complaint.status === 'In Progress' ? (language === 'Telugu' ? 'ప్రక్రియలో ఉండటానికి కారణం' : 'In Progress & Pending Reason') : (language === 'Telugu' ? 'పెండింగ్ వివరాలు' : 'Pending Action Details')}
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.5', margin: 0, fontWeight: '500' }}>
+              {complaint.pending_reason || (complaint.status_history && complaint.status_history[complaint.status_history.length - 1]?.notes) || (
+                complaint.status === 'In Progress'
+                  ? 'Field inspection completed. Work is actively in progress; currently pending replacement parts and materials from Mandal Depot.'
+                  : 'Acknowledged by Ward Sachivalayam. Pending official on-site inspection and clearance.'
+              )}
+            </p>
           </div>
         )}
       </div>
@@ -298,14 +378,14 @@ export default function ComplaintTracking({ complaintId, language, onBack, showT
         <div className="timeline">
           {timelineStages.map((stage) => {
             const stageStatus = getStageStatus(stage);
-            const log = complaint.status_history?.find(h => h.status === stage);
+            const log = complaint.status_history?.find(h => h.status === stage || (stage === 'Pending' && (h.status === 'Pending' || h.status === 'Assigned')));
             
             const stageHeader = language === 'Telugu' ? {
               "Submitted": "సమర్పించబడింది",
-              "Assigned": "అధికారికి కేటాయించబడింది",
+              "Pending": "పెండింగ్‌లో ఉంది / కేటాయించబడింది",
               "In Progress": "ప్రక్రియలో ఉంది",
               "Resolved": "పరిష్కరించబడింది"
-            }[stage] : stage;
+            }[stage] : (stage === 'Pending' ? 'Pending / Assigned' : stage);
 
             return (
               <div 

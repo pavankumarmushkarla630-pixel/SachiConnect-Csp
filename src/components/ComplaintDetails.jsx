@@ -4,8 +4,10 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
+  const [priority, setPriority] = useState('Medium');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const t = {
     English: {
@@ -15,6 +17,7 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
       phone: "Mobile Number",
       village: "Village / Location",
       category: "Category",
+      priority: "Problem Complexity / Priority",
       description: "Description",
       language: "Reporting Language",
       audio: "Voice Complaint Recording",
@@ -22,15 +25,16 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
       location: "GPS Coordinates",
       viewMap: "View on Google Maps",
       status: "Current Status",
-      updateStatus: "Update Resolution Status",
+      updateStatus: "Update Resolution Status & Priority",
+      priorityLabel: "Assign Problem Priority",
       statusLabel: "Select Status",
       notesLabel: "Status Update Notes / Action Taken",
       notesPlaceholder: "Describe the action taken or assignment details...",
-      save: "Save Status Update",
+      save: "Save Status & Priority",
       resolve: "Mark as Resolved",
       back: "Back",
       loading: "Loading complaint details...",
-      saveSuccess: "Status updated successfully.",
+      saveSuccess: "Status & Priority updated successfully.",
       saveErr: "Failed to update status."
     },
     Telugu: {
@@ -40,6 +44,7 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
       phone: "మొబైల్ సంఖ్య",
       village: "గ్రామం / ప్రాంతం",
       category: "ఫిర్యాదు వర్గం",
+      priority: "సమస్య సంక్లిష్టత / ప్రాధాన్యత",
       description: "వివరణ",
       language: "భాష",
       audio: "వాయిస్ రికార్డింగ్",
@@ -47,15 +52,16 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
       location: "GPS స్థానం",
       viewMap: "గూగుల్ మ్యాప్స్‌లో చూడండి",
       status: "ప్రస్తుత స్థితి",
-      updateStatus: "పరిష్కార స్థితిని నవీకరించండి",
+      updateStatus: "పరిష్కార స్థితి & ప్రాధాన్యతను నవీకరించండి",
+      priorityLabel: "సమస్య ప్రాధాన్యతను కేటాయించండి",
       statusLabel: "స్థితిని ఎంచుకోండి",
       notesLabel: "నవీకరణ గమనికలు / తీసుకున్న చర్య",
       notesPlaceholder: "తీసుకున్న చర్య లేదా అసైన్మెంట్ వివరాలను వివరించండి...",
-      save: "స్థితిని నవీకరించు",
+      save: "స్థితి & ప్రాధాన్యతను నవీకరించు",
       resolve: "పరిష్కరించబడినట్లు గుర్తించు",
       back: "వెనుకకు",
       loading: "ఫిర్యాదు వివరాలను లోడ్ చేస్తున్నాము...",
-      saveSuccess: "స్థితి విజయవంతంగా నవీకరించబడింది.",
+      saveSuccess: "స్థితి & ప్రాధాన్యత విజయవంతంగా నవీకరించబడింది.",
       saveErr: "స్థితి నవీకరణ విఫలమైంది."
     }
   }[language] || {
@@ -65,6 +71,7 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
     phone: "Mobile Number",
     village: "Village / Location",
     category: "Category",
+    priority: "Problem Complexity / Priority",
     description: "Description",
     language: "Reporting Language",
     audio: "Voice Complaint Recording",
@@ -72,15 +79,16 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
     location: "GPS Coordinates",
     viewMap: "View on Google Maps",
     status: "Current Status",
-    updateStatus: "Update Resolution Status",
+    updateStatus: "Update Resolution Status & Priority",
+    priorityLabel: "Assign Problem Priority",
     statusLabel: "Select Status",
     notesLabel: "Status Update Notes / Action Taken",
     notesPlaceholder: "Describe the action taken or assignment details...",
-    save: "Save Status Update",
+    save: "Save Status & Priority",
     resolve: "Mark as Resolved",
     back: "Back",
     loading: "Loading complaint details...",
-    saveSuccess: "Status updated successfully.",
+    saveSuccess: "Status & Priority updated successfully.",
     saveErr: "Failed to update status."
   };
 
@@ -96,6 +104,7 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
         const data = await res.json();
         setComplaint(data);
         setStatus(data.status);
+        setPriority(data.complexity || data.priority || 'Medium');
       } else {
         showToast("Complaint not found.");
       }
@@ -114,7 +123,12 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
       const res = await fetch(`/api/complaints/${complaintId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, notes: notes || `Status updated to ${status}` })
+        body: JSON.stringify({ 
+          status, 
+          priority,
+          complexity: priority,
+          notes: notes || `Status updated to ${status} (Priority: ${priority})` 
+        })
       });
       const data = await res.json();
       setSubmitting(false);
@@ -162,6 +176,24 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
     }
   };
 
+  const handleResendEmergencyEmail = async () => {
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`/api/complaints/${complaintId}/emergency-email`, { method: 'POST' });
+      if (res.ok) {
+        showToast(language === 'Telugu' ? "అత్యవసర ఈమెయిల్ అలర్ట్ తిరిగి పంపబడింది!" : "Emergency alert email resent to admin successfully!");
+        fetchComplaint();
+      } else {
+        showToast("Failed to send emergency email.");
+      }
+    } catch (err) {
+      showToast("Failed to send emergency email.");
+      console.error(err);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '24px' }}>
@@ -183,6 +215,7 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
   const getStatusClass = (status) => {
     switch (status) {
       case 'Submitted': return 'status-submitted';
+      case 'Pending': return 'status-pending';
       case 'Assigned': return 'status-assigned';
       case 'In Progress': return 'status-in-progress';
       case 'Resolved': return 'status-resolved';
@@ -203,15 +236,55 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
         </div>
       </div>
 
+      {/* 🚨 CRITICAL EMERGENCY PROTOCOL BANNER */}
+      {((complaint.complexity || complaint.priority) === 'Critical') && (
+        <div className="emergency-siren-banner" style={{ marginBottom: '20px' }}>
+          <div className="emergency-siren-icon">🚨</div>
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="emergency-siren-badge">CRITICAL EMERGENCY PROTOCOL</span>
+              <span style={{ fontSize: '15px', fontWeight: '900', color: '#DC2626' }}>
+                {language === 'Telugu' ? 'తక్షణ ఫీల్డ్ అత్యవసర చర్య తప్పనిసరి' : 'Immediate On-Site Emergency Action Mandated'}
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              {complaint.email_alert?.sent 
+                ? `📧 Automated alert email delivered to Admin (${complaint.email_alert.sent_to}) at ${new Date(complaint.email_alert.timestamp).toLocaleTimeString()}`
+                : `📧 Automated high-priority alert email sent to Admin & District Collectorate.`}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: '12px', padding: '6px 14px', fontWeight: '750', whiteSpace: 'nowrap' }}
+            onClick={handleResendEmergencyEmail}
+            disabled={sendingEmail}
+          >
+            {sendingEmail ? 'Sending...' : '📧 Resend Alert Email'}
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         
         {/* Info & Evidence Card */}
         <div className="card" style={{ background: 'var(--surface-color)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', marginBottom: '18px' }}>
             <span style={{ fontWeight: '800', fontSize: '18px', color: 'var(--text-primary)' }}>{complaint.id}</span>
-            <span className={`status-pill ${getStatusClass(complaint.status)}`}>
-              {complaint.status}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {(() => {
+                const rawP = complaint.complexity || complaint.priority || 'Medium';
+                const pVal = rawP === 'Low' ? 'Normal' : rawP;
+                return (
+                  <span className={`priority-pill priority-${pVal.toLowerCase()}`}>
+                    {pVal === 'Critical' ? '🚨 Critical (Emergency)' : pVal === 'High' ? '🟠 High' : pVal === 'Medium' ? '🟡 Medium' : '🟢 Normal'}
+                  </span>
+                );
+              })()}
+              <span className={`status-pill ${getStatusClass(complaint.status)}`}>
+                {complaint.status}
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -228,11 +301,25 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
               <div style={{ fontSize: '15px', fontWeight: '750', color: 'var(--text-primary)', marginTop: '2px' }}>📍 {complaint.village_area}</div>
             </div>
 
-            {/* Category details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {/* Category & Priority details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '14px' }}>
               <div>
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.category}</div>
                 <div style={{ fontSize: '14.5px', fontWeight: '800', color: 'var(--primary)', marginTop: '2px' }}>{complaint.complaint_category}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.priority}</div>
+                <div style={{ marginTop: '4px' }}>
+                  {(() => {
+                    const rawP = complaint.complexity || complaint.priority || 'Medium';
+                    const pVal = rawP === 'Low' ? 'Normal' : rawP;
+                    return (
+                      <span className={`priority-pill priority-${pVal.toLowerCase()}`}>
+                        {pVal === 'Critical' ? '🚨 Critical (Emergency)' : pVal === 'High' ? '🟠 High' : pVal === 'Medium' ? '🟡 Medium' : '🟢 Normal'}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
               <div>
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.language}</div>
@@ -303,6 +390,22 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
           </h3>
 
           <form onSubmit={handleStatusUpdate}>
+            {/* Priority Selector */}
+            <div className="form-group">
+              <label className="form-label">{t.priorityLabel}</label>
+              <select 
+                className="form-control" 
+                value={priority} 
+                onChange={(e) => setPriority(e.target.value)}
+                style={{ fontWeight: '700' }}
+              >
+                <option value="Critical">🔴 {language === 'Telugu' ? 'అత్యవసరం (Critical - Emergency)' : 'Critical (Safety Emergency)'}</option>
+                <option value="High">🟠 {language === 'Telugu' ? 'అధికం (High - Urgent Repair)' : 'High (Urgent Repair)'}</option>
+                <option value="Medium">🟡 {language === 'Telugu' ? 'మధ్యస్థం (Medium - Attention Needed)' : 'Medium (Standard Attention)'}</option>
+                <option value="Normal">🟢 {language === 'Telugu' ? 'సాధారణం (Normal - Routine Issue)' : 'Normal (Routine Issue)'}</option>
+              </select>
+            </div>
+
             {/* Status Selector */}
             <div className="form-group">
               <label className="form-label">{t.statusLabel}</label>
@@ -313,6 +416,7 @@ export default function ComplaintDetails({ complaintId, language, onBack, showTo
                 required
               >
                 <option value="Submitted">Submitted</option>
+                <option value="Pending">Pending</option>
                 <option value="Assigned">Assigned</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Resolved">Resolved</option>

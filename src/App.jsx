@@ -38,6 +38,12 @@ export default function App() {
     { id: 3, text: "Welcome to Sachivalayam Connect Pro!", unread: false, time: "1d ago" }
   ]);
 
+  // Global Search State
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
   const showToast = (message) => {
     setToast({ message, show: true });
   };
@@ -68,6 +74,88 @@ export default function App() {
     }
   }, []);
 
+
+  // Global Search Handler (Searches by ID, with or without SC- prefix)
+  const handleGlobalSearch = async (e, directQuery = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const query = (directQuery !== null ? directQuery : globalSearchQuery).trim();
+    if (!query) {
+      showToast(language === 'Telugu' ? 'దయచేసి ఫిర్యాదు ఐడిని నమోదు చేయండి' : 'Please enter a Complaint ID (e.g. SC-7821)');
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchResults(false);
+    try {
+      // 1. Direct search by ID
+      const res = await fetch(`/api/complaints/${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const found = await res.json();
+        if (found && found.id) {
+          setSelectedComplaintId(found.id);
+          if (user?.role === 'Authority') {
+            setActiveScreen('details');
+          } else {
+            setActiveScreen('tracking');
+          }
+          setGlobalSearchQuery('');
+          showToast(language === 'Telugu' ? `ఫిర్యాదు ${found.id} కనుగొనబడింది!` : `Opening Grievance ${found.id}...`);
+          setIsSearching(false);
+          return;
+        }
+      }
+
+      // 2. Query search fallback
+      const searchRes = await fetch(`/api/complaints?search=${encodeURIComponent(query)}`);
+      if (searchRes.ok) {
+        const list = await searchRes.json();
+        if (Array.isArray(list) && list.length > 0) {
+          const match = list[0];
+          setSelectedComplaintId(match.id);
+          if (user?.role === 'Authority') {
+            setActiveScreen('details');
+          } else {
+            setActiveScreen('tracking');
+          }
+          setGlobalSearchQuery('');
+          showToast(language === 'Telugu' ? `ఫిర్యాదు ${match.id} కనుగొనబడింది!` : `Found Grievance ${match.id}!`);
+          setIsSearching(false);
+          return;
+        }
+      }
+
+      showToast(
+        language === 'Telugu'
+          ? `ఫిర్యాదు ఐడి "${query}" కనుగొనబడలేదు. దయచేసి ఐడిని తనిఖీ చేయండి.`
+          : `Grievance ID "${query}" not found. Please verify the ID.`
+      );
+    } catch (err) {
+      console.error('Search error:', err);
+      showToast('Search request failed. Please check connection.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleGlobalSearchChange = async (val) => {
+    setGlobalSearchQuery(val);
+    const trimmed = val.trim();
+    if (trimmed.length >= 2) {
+      try {
+        const res = await fetch(`/api/complaints?search=${encodeURIComponent(trimmed)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.slice(0, 5));
+          setShowSearchResults(true);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  };
 
   const handleSplashComplete = () => {
     const savedUser = localStorage.getItem('sachivalayam_user');
@@ -359,10 +447,51 @@ export default function App() {
               </div>
 
               <div className="topbar-right">
-                {/* Global Search Bar (Simulated UI) */}
-                <div className="topbar-search-container" style={{ display: window.innerWidth > 600 ? 'flex' : 'none' }}>
-                  <span>🔍</span>
-                  <input type="text" className="topbar-search-input" placeholder="Search grievance system..." />
+                {/* Global Search Bar with functional button & dropdown */}
+                <div style={{ position: 'relative', display: window.innerWidth > 500 ? 'block' : 'none' }}>
+                  <form onSubmit={handleGlobalSearch} className="topbar-search-container">
+                    <input 
+                      type="text" 
+                      className="topbar-search-input" 
+                      placeholder={language === 'Telugu' ? "ఫిర్యాదు ఐడి శోధించండి (SC-7821)..." : "Search Complaint ID (e.g. SC-7821)..."} 
+                      value={globalSearchQuery}
+                      onChange={(e) => handleGlobalSearchChange(e.target.value)}
+                      onFocus={() => { if (searchResults.length > 0) setShowSearchResults(true); }}
+                    />
+                    <button 
+                      type="submit" 
+                      className="topbar-search-btn"
+                      disabled={isSearching}
+                      title={language === 'Telugu' ? "శోధించండి" : "Search"}
+                    >
+                      {isSearching ? "⏳" : "🔍"}
+                    </button>
+                  </form>
+
+                  {/* Autocomplete Results Dropdown */}
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="search-dropdown-results">
+                      {searchResults.map((item) => (
+                        <div 
+                          key={item.id} 
+                          className="search-dropdown-item"
+                          onClick={() => {
+                            handleGlobalSearch(null, item.id);
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: '800', color: 'var(--primary)' }}>#{item.id}</span>
+                            <span className={`status-pill status-${item.status.toLowerCase().replace(' ', '-')}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                              {item.status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            📍 {item.village_area} • {item.complaint_category}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Language Switch — premium pill with flag */}

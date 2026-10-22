@@ -4,12 +4,15 @@
       "complaint_audio_url": "/uploads/sample_audio_1.wav",
       "complaint_category": "Streetlights",
       "complaint_description_text": "Main bazaar streetlights have been flickering or off completely for the last 5 days. It is dangerous to walk after 7 PM.",
+      "complexity": "High",
       "created_at": "2026-06-16T17:29:54.616Z",
       "id": "SC-7821",
       "language": "Telugu",
       "latitude": 14.2882,
       "longitude": 77.7885,
+      "pending_reason": "Field inspection completed. Work is in progress; pending delivery of replacement 45W LED bulbs and wiring from Mandal Depot.",
       "photo_url": "/uploads/sample_streetlight.jpg",
+      "priority": "High",
       "resident_name": "Ramesh Kumar",
       "status": "In Progress",
       "status_history": [
@@ -24,7 +27,7 @@
           "updated_at": "2026-06-17T17:29:54.616Z"
         },
         {
-          "notes": "Technician dispatched to inspect lines and replace bulbs.",
+          "notes": "Technician dispatched to inspect lines and replace bulbs. Inspection completed: replacement 45W LED fixture and wiring are currently in progress & pending dispatch from the central Mandal depot (Est. 24-48 hrs).",
           "status": "In Progress",
           "updated_at": "2026-06-18T17:29:54.616Z"
         }
@@ -35,12 +38,14 @@
       "complaint_audio_url": "/uploads/sample_audio_2.wav",
       "complaint_category": "Water Supply",
       "complaint_description_text": "Drinking water pipe leak near the panchayat office. Clean drinking water is getting wasted onto the road.",
+      "complexity": "High",
       "created_at": "2026-06-12T17:29:54.616Z",
       "id": "SC-9214",
       "language": "English",
       "latitude": 14.7103,
       "longitude": 77.6432,
       "photo_url": "/uploads/sample_water_leak.jpg",
+      "priority": "High",
       "resident_name": "Saraswathi Devi",
       "status": "Resolved",
       "status_history": [
@@ -71,12 +76,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Roads",
       "complaint_description_text": "Huge pothole in the middle of the school road. Two motorcyclists slipped yesterday. Urgently needs filling.",
+      "complexity": "Critical",
       "created_at": "2026-06-19T17:29:54.616Z",
       "id": "SC-1054",
       "language": "Telugu",
       "latitude": 14.6225,
       "longitude": 77.6075,
       "photo_url": "/uploads/sample_pothole.jpg",
+      "priority": "Critical",
       "resident_name": "Mallesh G.",
       "status": "Submitted",
       "status_history": [
@@ -92,19 +99,27 @@
       "complaint_audio_url": "",
       "complaint_category": "Drainage",
       "complaint_description_text": "Streetlight near house is broken",
+      "complexity": "Low",
       "created_at": "2026-06-20T09:43:30.039Z",
       "id": "SC-3292",
       "language": "English",
       "latitude": 17.702257,
       "longitude": 83.166693,
+      "pending_reason": "Acknowledged by Ward Secretary. Pending field inspection and clearance from Mandal Sanitation & Drainage Assistant.",
       "photo_url": "",
+      "priority": "Low",
       "resident_name": "Ramesh Kumar",
-      "status": "Submitted",
+      "status": "Pending",
       "status_history": [
         {
           "notes": "Grievance registered successfully by Ramesh Kumar",
           "status": "Submitted",
           "updated_at": "2026-06-20T09:43:30.039Z"
+        },
+        {
+          "notes": "Acknowledged by Ward Sachivalayam Secretary. Site inspection report pending clearance from Mandal Sanitation & Drainage Assistant.",
+          "status": "Pending",
+          "updated_at": "2026-06-21T10:15:00.000Z"
         }
       ],
       "village_area": "KothacheruvuVasanthapuram"
@@ -113,12 +128,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Public Facilities",
       "complaint_description_text": "Reported via voice assistant.",
+      "complexity": "High",
       "created_at": "2026-06-20T10:40:50.778Z",
       "id": "SC-2118",
       "language": "Telugu",
       "latitude": 0,
       "longitude": 0,
       "photo_url": "",
+      "priority": "High",
       "resident_name": "ggh",
       "status": "Submitted",
       "status_history": [
@@ -134,12 +151,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Sanitation",
       "complaint_description_text": "Reported via voice assistant.",
+      "complexity": "High",
       "created_at": "2026-06-21T06:34:35.877Z",
       "id": "SC-1366",
       "language": "English",
       "latitude": 17.702257,
       "longitude": 83.166693,
       "photo_url": "/uploads/photo-1782023675820-783583517.jpg",
+      "priority": "High",
       "resident_name": "Pawan Kumar",
       "status": "Submitted",
       "status_history": [
@@ -155,12 +174,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Sanitation",
       "complaint_description_text": "Reported via voice assistant.",
+      "complexity": "High",
       "created_at": "2026-06-21T06:41:57.696Z",
       "id": "SC-6911",
       "language": "English",
       "latitude": 17.702257,
       "longitude": 83.166693,
       "photo_url": "",
+      "priority": "High",
       "resident_name": "Ramkumar",
       "status": "Submitted",
       "status_history": [
@@ -176,12 +197,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Streetlights",
       "complaint_description_text": "Reported via voice assistant.",
+      "complexity": "Critical",
       "created_at": "2026-06-21T07:38:17.088Z",
       "id": "SC-2097",
       "language": "English",
       "latitude": 0,
       "longitude": 0,
       "photo_url": "",
+      "priority": "Critical",
       "resident_name": "Pawan Kumar",
       "status": "Submitted",
       "status_history": [
@@ -197,12 +220,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Sanitation",
       "complaint_description_text": "Reported via voice assistant.",
+      "complexity": "Critical",
       "created_at": "2026-06-21T07:49:03.165Z",
       "id": "SC-9709",
       "language": "English",
       "latitude": 0,
       "longitude": 0,
       "photo_url": "",
+      "priority": "Critical",
       "resident_name": "Pawan Kumar",
       "resident_phone": "8639768887",
       "status": "Submitted",
@@ -219,12 +244,14 @@
       "complaint_audio_url": "",
       "complaint_category": "Streetlights",
       "complaint_description_text": "Streetlights are not working properly ",
+      "complexity": "High",
       "created_at": "2026-06-22T15:06:56.973Z",
       "id": "SC-7337",
       "language": "English",
       "latitude": 18.5858128,
       "longitude": 83.5051875,
       "photo_url": "",
+      "priority": "High",
       "resident_name": "Pavan ",
       "resident_phone": "8639768887",
       "status": "Submitted",
@@ -238,70 +265,542 @@
       "village_area": "pedapenki"
     },
     {
-      "id": "SC-4495",
-      "resident_name": "Ramesh Kumar",
-      "resident_phone": "9876543210",
-      "village_area": "Kothacheruvu",
+      "complaint_audio_url": "",
       "complaint_category": "Roads",
       "complaint_description_text": "srfdd",
-      "complaint_audio_url": "",
-      "photo_url": "",
+      "complexity": "Medium",
+      "created_at": "2026-06-26T13:09:30.434Z",
+      "id": "SC-4495",
+      "language": "English",
       "latitude": 17.714553896593678,
       "longitude": 83.1465765615031,
-      "language": "English",
-      "status": "Submitted",
-      "created_at": "2026-06-26T13:09:30.434Z",
-      "status_history": [
-        {
-          "status": "Submitted",
-          "updated_at": "2026-06-26T13:09:30.434Z",
-          "notes": "Grievance registered successfully by Ramesh Kumar"
-        }
-      ]
-    },
-    {
-      "id": "SC-1114",
+      "photo_url": "",
+      "priority": "Medium",
       "resident_name": "Ramesh Kumar",
       "resident_phone": "9876543210",
-      "village_area": "Duvvada",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-26T13:09:30.434Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "complaint_audio_url": "",
       "complaint_category": "Roads",
       "complaint_description_text": "dfsa",
-      "complaint_audio_url": "",
-      "photo_url": "/uploads/photo-1782479595070-977059914.jpg",
+      "complexity": "Low",
+      "created_at": "2026-06-26T13:13:15.217Z",
+      "id": "SC-1114",
+      "language": "Telugu",
       "latitude": 17.71457501464668,
       "longitude": 83.14657222672483,
-      "language": "Telugu",
+      "photo_url": "/uploads/photo-1782479595070-977059914.jpg",
+      "priority": "Low",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
       "status": "Submitted",
-      "created_at": "2026-06-26T13:13:15.217Z",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-26T13:13:15.217Z"
+        }
+      ],
+      "village_area": "Duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Roads",
+      "complaint_description_text": "dsfhg",
+      "complexity": "Critical",
+      "created_at": "2026-06-26T13:18:23.853Z",
+      "id": "SC-3657",
+      "language": "English",
+      "latitude": 17.714549752648164,
+      "longitude": 83.14655205459941,
+      "photo_url": "/uploads/photo-1782479903834-263971297.jpg",
+      "priority": "Critical",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-26T13:18:23.853Z"
+        }
+      ],
+      "village_area": "Duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Water Supply",
+      "complaint_description_text": "water is not coming from 2 days\n",
+      "complexity": "High",
+      "created_at": "2026-06-26T13:41:55.172Z",
+      "id": "SC-2951",
+      "language": "English",
+      "latitude": 17.690979264350194,
+      "longitude": 83.17263187803677,
+      "photo_url": "",
+      "priority": "High",
+      "resident_name": "sai",
+      "resident_phone": "8639768887",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by sai",
+          "status": "Submitted",
+          "updated_at": "2026-06-26T13:41:55.172Z"
+        }
+      ],
+      "village_area": "pedapenki"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Drainage",
+      "complaint_description_text": "ABC",
+      "complexity": "Medium",
+      "created_at": "2026-06-27T01:31:13.650Z",
+      "id": "SC-5457",
+      "language": "English",
+      "latitude": 17.7142458,
+      "longitude": 83.146434,
+      "photo_url": "",
+      "priority": "Medium",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-27T01:31:13.650Z"
+        }
+      ],
+      "village_area": "Duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Drainage",
+      "complaint_description_text": "Not perfect",
+      "complexity": "Low",
+      "created_at": "2026-06-27T07:05:44.754Z",
+      "id": "SC-9299",
+      "language": "English",
+      "latitude": 14.6819,
+      "longitude": 77.6006,
+      "photo_url": "/uploads/photo-1782543944398-694768216.jpg",
+      "priority": "Low",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-06-27T07:05:44.754Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Drainage",
+      "complaint_description_text": "sanitation is not good",
+      "complexity": "Critical",
+      "created_at": "2026-06-30T08:39:17.659Z",
+      "id": "SC-4557",
+      "language": "English",
+      "latitude": 17.710103,
+      "longitude": 83.165768,
+      "photo_url": "",
+      "priority": "Critical",
+      "resident_name": "sai",
+      "resident_phone": "8639768887",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by sai",
+          "status": "Submitted",
+          "updated_at": "2026-06-30T08:39:17.659Z"
+        }
+      ],
+      "village_area": "pedapenki"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Streetlights",
+      "complaint_description_text": "sd",
+      "complexity": "High",
+      "created_at": "2026-07-02T05:56:48.912Z",
+      "feedback": {
+        "comments": "dfg",
+        "rating": 5,
+        "submitted_at": "2026-07-02T05:57:13.784Z"
+      },
+      "id": "SC-8544",
+      "language": "Telugu",
+      "latitude": 17.710527963840526,
+      "longitude": 83.16596049100015,
+      "photo_url": "/uploads/photo-1782971807741-817489933.jpg",
+      "priority": "High",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Resolved",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-07-02T05:56:48.912Z"
+        },
+        {
+          "notes": "Grievance resolved and verified by Sachivalayam authority.",
+          "status": "Resolved",
+          "updated_at": "2026-07-02T05:57:01.508Z"
+        },
+        {
+          "notes": "Resident rated resolution 5/5. Review: \"dfg\"",
+          "status": "Feedback Submitted",
+          "updated_at": "2026-07-02T05:57:13.784Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Streetlights",
+      "complaint_description_text": "Recently streetlights in my are not working properly please kindly repair them",
+      "complexity": "Low",
+      "created_at": "2026-07-03T06:32:44.459Z",
+      "id": "SC-1925",
+      "language": "English",
+      "latitude": 14.6819,
+      "longitude": 77.6006,
+      "photo_url": "",
+      "priority": "Low",
+      "resident_name": "Pavan",
+      "resident_phone": "7657889932",
+      "status": "Resolved",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Pavan",
+          "status": "Submitted",
+          "updated_at": "2026-07-03T06:32:44.459Z"
+        },
+        {
+          "notes": "we are about taken action on it sir we will resolve it ",
+          "status": "In Progress",
+          "updated_at": "2026-07-03T06:35:58.166Z"
+        },
+        {
+          "notes": "Grievance resolved and verified by Sachivalayam authority.",
+          "status": "Resolved",
+          "updated_at": "2026-07-03T06:36:08.201Z"
+        }
+      ],
+      "village_area": "Duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Public Facilities",
+      "complaint_description_text": "Dd",
+      "complexity": "Low",
+      "created_at": "2026-07-03T18:01:29.994Z",
+      "id": "SC-8268",
+      "language": "English",
+      "latitude": 14.6819,
+      "longitude": 77.6006,
+      "photo_url": "/uploads/photo-1783101687957-628170806.jpg",
+      "priority": "Low",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-07-03T18:01:29.994Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Sanitation",
+      "complaint_description_text": "Sanitation is not good in my area",
+      "complexity": "Critical",
+      "created_at": "2026-07-04T04:04:57.104Z",
+      "id": "SC-2846",
+      "language": "English",
+      "latitude": 17.7123953,
+      "longitude": 83.1659771,
+      "photo_url": "",
+      "priority": "Critical",
+      "resident_name": "sai",
+      "resident_phone": "8639768887",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by sai",
+          "status": "Submitted",
+          "updated_at": "2026-07-04T04:04:57.104Z"
+        }
+      ],
+      "village_area": "Duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Roads",
+      "complaint_description_text": "Damaged roads",
+      "complexity": "High",
+      "created_at": "2026-07-04T04:10:56.293Z",
+      "id": "SC-7924",
+      "language": "English",
+      "latitude": 17.7122702,
+      "longitude": 83.1660629,
+      "photo_url": "/uploads/photo-1783138255826-662315147.jpg",
+      "priority": "High",
+      "resident_name": "Tushar",
+      "resident_phone": "8328290973",
+      "status": "Resolved",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Tushar",
+          "status": "Submitted",
+          "updated_at": "2026-07-04T04:10:56.293Z"
+        },
+        {
+          "notes": "Grievance resolved and verified by Sachivalayam authority.",
+          "status": "Resolved",
+          "updated_at": "2026-07-04T04:12:53.222Z"
+        }
+      ],
+      "village_area": "Gajuwaka"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Other",
+      "complaint_description_text": "no oyo rooms\n",
+      "complexity": "Low",
+      "created_at": "2026-07-04T04:24:22.597Z",
+      "id": "SC-8176",
+      "language": "English",
+      "latitude": 17.710531020471848,
+      "longitude": 83.16596062102921,
+      "photo_url": "/uploads/photo-1783139061859-874425137.jpg",
+      "priority": "Low",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-07-04T04:24:22.597Z"
+        }
+      ],
+      "village_area": "Duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Sanitation",
+      "complaint_description_text": "sanitation is not good",
+      "complexity": "Low",
+      "created_at": "2026-07-04T05:50:30.284Z",
+      "id": "SC-3824",
+      "language": "English",
+      "latitude": 14.6819,
+      "longitude": 77.6006,
+      "photo_url": "",
+      "priority": "Low",
+      "resident_name": "pavan",
+      "resident_phone": "6302262019",
+      "status": "Resolved",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by pavan",
+          "status": "Submitted",
+          "updated_at": "2026-07-04T05:50:30.284Z"
+        },
+        {
+          "notes": "Grievance resolved and verified by Sachivalayam authority.",
+          "status": "Resolved",
+          "updated_at": "2026-07-04T05:52:39.090Z"
+        }
+      ],
+      "village_area": "duvvada"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Drainage",
+      "complaint_description_text": "Ggh",
+      "complexity": "High",
+      "created_at": "2026-10-22T04:22:46.768Z",
+      "id": "SC-5512",
+      "language": "English",
+      "latitude": 18.5854664,
+      "longitude": 83.505854,
+      "photo_url": "",
+      "priority": "High",
+      "resident_name": "sai",
+      "resident_phone": "8639768887",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by sai",
+          "status": "Submitted",
+          "updated_at": "2026-10-22T04:22:46.768Z"
+        }
+      ],
+      "village_area": "Pedapenki"
+    },
+    {
+      "complaint_audio_url": "",
+      "complaint_category": "Water Supply",
+      "complaint_description_text": "Yyu",
+      "complexity": "Critical",
+      "created_at": "2026-10-22T05:00:18.024Z",
+      "id": "SC-3787",
+      "language": "Telugu",
+      "latitude": 14.6819,
+      "longitude": 77.6006,
+      "photo_url": "/uploads/photo-1792645217415-5826540.jpg",
+      "priority": "Critical",
+      "resident_name": "Ramesh Kumar",
+      "resident_phone": "9876543210",
+      "status": "Submitted",
+      "status_history": [
+        {
+          "notes": "Grievance registered successfully by Ramesh Kumar",
+          "status": "Submitted",
+          "updated_at": "2026-10-22T05:00:18.024Z"
+        }
+      ],
+      "village_area": "Kothacheruvu"
+    },
+    {
+      "id": "SC-2526",
+      "resident_name": "Sita Devi",
+      "resident_phone": "9876543210",
+      "village_area": "Kothacheruvu",
+      "complaint_category": "Water Supply",
+      "complexity": "Critical",
+      "priority": "Critical",
+      "complaint_description_text": "Live electrical wire snapped and hanging across main road! High emergency risk to schoolchildren and vehicles.",
+      "complaint_audio_url": "",
+      "photo_url": "",
+      "latitude": 17.70311037654084,
+      "longitude": 83.16691737148618,
+      "language": "English",
+      "status": "Submitted",
+      "created_at": "2026-10-22T15:59:36.308Z",
       "status_history": [
         {
           "status": "Submitted",
-          "updated_at": "2026-06-26T13:13:15.217Z",
-          "notes": "Grievance registered successfully by Ramesh Kumar"
+          "updated_at": "2026-10-22T15:59:36.308Z",
+          "notes": "Grievance registered successfully by Sita Devi (Priority: Critical)"
+        },
+        {
+          "status": "Emergency Alert",
+          "updated_at": "2026-10-22T15:59:36.318Z",
+          "notes": "🚨 CRITICAL EMERGENCY PROTOCOL ACTIVATED: High-priority email alert dispatched to Admin (admin.sachivalayam@ap.gov.in) and District Collectorate."
         }
-      ]
+      ],
+      "email_alert": {
+        "sent": true,
+        "alert_id": "ALERT-397971",
+        "sent_to": "admin.sachivalayam@ap.gov.in",
+        "cc": "collector.satyasai@ap.gov.in",
+        "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-2526 - Kothacheruvu (Water Supply)",
+        "timestamp": "2026-10-22T15:59:36.309Z",
+        "status": "Delivered"
+      }
     },
     {
-      "id": "SC-3657",
-      "resident_name": "Ramesh Kumar",
+      "id": "SC-4268",
+      "resident_name": "Ramesh Naidu",
+      "resident_phone": "9876543210",
+      "village_area": "Kothacheruvu",
+      "complaint_category": "Streetlights",
+      "complexity": "Critical",
+      "priority": "Critical",
+      "complaint_description_text": "The main street light on temple road has been completely non-functional for 4 days creating serious hazard at night.",
+      "complaint_audio_url": "",
+      "photo_url": "",
+      "latitude": 17.703023065793946,
+      "longitude": 83.16667343743626,
+      "language": "English",
+      "status": "Submitted",
+      "created_at": "2026-10-22T16:25:37.263Z",
+      "status_history": [
+        {
+          "status": "Submitted",
+          "updated_at": "2026-10-22T16:25:37.263Z",
+          "notes": "Grievance registered successfully by Ramesh Naidu (Priority: Critical)"
+        },
+        {
+          "status": "Emergency Alert",
+          "updated_at": "2026-10-22T16:25:37.271Z",
+          "notes": "🚨 CRITICAL EMERGENCY PROTOCOL ACTIVATED: High-priority email alert dispatched to Admin (admin.sachivalayam@ap.gov.in) and District Collectorate."
+        }
+      ],
+      "email_alert": {
+        "sent": true,
+        "alert_id": "ALERT-243000",
+        "sent_to": "admin.sachivalayam@ap.gov.in",
+        "cc": "collector.satyasai@ap.gov.in",
+        "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-4268 - Kothacheruvu (Streetlights)",
+        "timestamp": "2026-10-22T16:25:37.263Z",
+        "status": "Delivered"
+      }
+    },
+    {
+      "id": "SC-7378",
+      "resident_name": "Lakshmi Devi",
       "resident_phone": "9876543210",
       "village_area": "Duvvada",
       "complaint_category": "Roads",
-      "complaint_description_text": "dsfhg",
+      "complexity": "Critical",
+      "priority": "Critical",
+      "complaint_description_text": "Streetlight bulb damaged on main road near bus stand.",
       "complaint_audio_url": "",
-      "photo_url": "/uploads/photo-1782479903834-263971297.jpg",
-      "latitude": 17.714549752648164,
-      "longitude": 83.14655205459941,
+      "photo_url": "",
+      "latitude": 17.70305976374926,
+      "longitude": 83.16665629849201,
       "language": "English",
       "status": "Submitted",
-      "created_at": "2026-06-26T13:18:23.853Z",
+      "created_at": "2026-10-22T16:30:25.501Z",
       "status_history": [
         {
           "status": "Submitted",
-          "updated_at": "2026-06-26T13:18:23.853Z",
-          "notes": "Grievance registered successfully by Ramesh Kumar"
+          "updated_at": "2026-10-22T16:30:25.501Z",
+          "notes": "Grievance registered successfully by Lakshmi Devi (Priority: Critical)"
+        },
+        {
+          "status": "Emergency Alert",
+          "updated_at": "2026-10-22T16:30:25.505Z",
+          "notes": "🚨 CRITICAL EMERGENCY PROTOCOL ACTIVATED: High-priority email alert dispatched to Admin (admin.sachivalayam@ap.gov.in) and District Collectorate."
+        },
+        {
+          "status": "Emergency Alert Resent",
+          "updated_at": "2026-10-22T16:34:21.411Z",
+          "notes": "🚨 Emergency alert email resent to admin.sachivalayam@ap.gov.in and Collectorate."
         }
-      ]
+      ],
+      "email_alert": {
+        "sent": true,
+        "alert_id": "ALERT-423619",
+        "sent_to": "admin.sachivalayam@ap.gov.in",
+        "cc": "collector.satyasai@ap.gov.in",
+        "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-7378 - Duvvada (Roads)",
+        "timestamp": "2026-10-22T16:34:21.404Z",
+        "status": "Delivered"
+      }
     }
   ],
   "users": [
@@ -399,6 +898,105 @@
       "resident_id": "RES-6940",
       "role": "Resident",
       "village": "Pakki"
+    },
+    {
+      "created_at": "2026-07-03T06:22:00.078Z",
+      "name": "Pavan",
+      "password": "12345",
+      "phone": "7657889932",
+      "resident_id": "RES-5177",
+      "role": "Resident",
+      "village": "Duvvada"
+    },
+    {
+      "created_at": "2026-07-03T06:24:44.764Z",
+      "name": "Pavan",
+      "password": "12345",
+      "phone": "7657889933",
+      "resident_id": "RES-3240",
+      "role": "Resident",
+      "village": "Duvvada"
+    },
+    {
+      "created_at": "2026-07-03T06:26:42.259Z",
+      "name": "Pavan",
+      "password": "43211",
+      "phone": "7657889934",
+      "resident_id": "RES-2579",
+      "role": "Resident",
+      "village": "Duvvada"
+    },
+    {
+      "created_at": "2026-07-03T06:29:07.961Z",
+      "name": "Pavan",
+      "password": "1234",
+      "phone": "1234657890",
+      "resident_id": "RES-3523",
+      "role": "Resident",
+      "village": "Duvvada"
+    },
+    {
+      "created_at": "2026-07-03T06:31:30.873Z",
+      "name": "Pavan",
+      "password": "1234",
+      "phone": "9854672320",
+      "resident_id": "RES-3704",
+      "role": "Resident",
+      "village": "Duvvada"
+    },
+    {
+      "created_at": "2026-07-03T06:34:53.872Z",
+      "name": "Ganesh",
+      "official_id": "OFF-2002",
+      "password": "1234",
+      "phone": "",
+      "role": "Authority",
+      "village": "District Head Office"
+    },
+    {
+      "created_at": "2026-07-04T04:02:12.870Z",
+      "name": "M.pavan",
+      "official_id": "OFF-166",
+      "password": "1234",
+      "phone": "",
+      "role": "Authority",
+      "village": "District Head Office"
+    },
+    {
+      "created_at": "2026-07-04T04:09:55.843Z",
+      "name": "Tushar",
+      "password": "tt55",
+      "phone": "8328290973",
+      "resident_id": "RES-7517",
+      "role": "Resident",
+      "village": "Gajuwaka"
+    },
+    {
+      "created_at": "2026-07-04T05:49:41.816Z",
+      "name": "pavan",
+      "password": "1234",
+      "phone": "6302262019",
+      "resident_id": "RES-6424",
+      "role": "Resident",
+      "village": "duvvada"
+    },
+    {
+      "created_at": "2026-07-04T05:52:17.164Z",
+      "name": "sai kumar",
+      "official_id": "OFF-345",
+      "password": "1234",
+      "phone": "",
+      "role": "Authority",
+      "village": "District Head Office"
+    },
+    {
+      "created_at": "2026-10-22T04:05:31.251Z",
+      "name": "Karri Venusri",
+      "password": "venu",
+      "phone": "8500129248",
+      "resident_id": "RES-3402",
+      "role": "Resident",
+      "village": "Anantapur"
     }
   ]
 }

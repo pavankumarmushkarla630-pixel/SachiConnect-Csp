@@ -18,6 +18,7 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
       searchPlaceholder: "Search by ID or description...",
       all: "All Reports",
       submitted: "Submitted",
+      pending: "Pending",
       inProgress: "In Progress",
       resolved: "Resolved",
       noComplaints: "You haven't filed any complaints yet.",
@@ -40,6 +41,7 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
       searchPlaceholder: "ID లేదా వివరణ ద్వారా శోధించండి...",
       all: "అన్ని నివేదికలు",
       submitted: "సమర్పించబడింది",
+      pending: "పెండింగ్‌లో ఉంది",
       inProgress: "ప్రక్రియలో ఉంది",
       resolved: "పరిష్కరించబడింది",
       noComplaints: "మీరు ఇంకా ఎలాంటి ఫిర్యాదులు దాఖలు చేయలేదు.",
@@ -62,6 +64,7 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
     searchPlaceholder: "Search by ID or description...",
     all: "All Reports",
     submitted: "Submitted",
+    pending: "Pending",
     inProgress: "In Progress",
     resolved: "Resolved",
     noComplaints: "You haven't filed any complaints yet.",
@@ -106,7 +109,8 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
                           c.complaint_category.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (activeFilter === 'All') return matchesSearch;
-    if (activeFilter === 'Submitted') return matchesSearch && (c.status === 'Submitted' || c.status === 'Assigned');
+    if (activeFilter === 'Submitted') return matchesSearch && c.status === 'Submitted';
+    if (activeFilter === 'Pending') return matchesSearch && (c.status === 'Pending' || c.status === 'Assigned');
     if (activeFilter === 'In Progress') return matchesSearch && c.status === 'In Progress';
     if (activeFilter === 'Resolved') return matchesSearch && c.status === 'Resolved';
     return matchesSearch;
@@ -131,6 +135,7 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
   const getStatusClass = (status) => {
     switch (status) {
       case 'Submitted': return 'status-submitted';
+      case 'Pending': return 'status-pending';
       case 'Assigned': return 'status-assigned';
       case 'In Progress': return 'status-in-progress';
       case 'Resolved': return 'status-resolved';
@@ -157,15 +162,49 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
           
           {/* Search bar */}
-          <div style={{ flex: '1 1 240px' }}>
+          <div style={{ flex: '1 1 280px', display: 'flex', gap: '8px' }}>
             <input 
               type="text" 
               className="form-control" 
               placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setCurrentPage(1);
+                  const query = searchTerm.trim().toLowerCase();
+                  const scQuery = query.startsWith('sc-') ? query : `sc-${query}`;
+                  const match = sortedComplaints.find(c => {
+                    const cid = (c.id || '').toLowerCase();
+                    return cid === query || cid === scQuery;
+                  });
+                  if (match) {
+                    onTrackComplaint(match.id);
+                  }
+                }
+              }}
               style={{ padding: '10px 14px', fontSize: '13.5px' }}
             />
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ padding: '8px 16px', fontSize: '13px', fontWeight: '800', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+              onClick={() => {
+                setCurrentPage(1);
+                const query = searchTerm.trim().toLowerCase();
+                const scQuery = query.startsWith('sc-') ? query : `sc-${query}`;
+                const match = sortedComplaints.find(c => {
+                  const cid = (c.id || '').toLowerCase();
+                  return cid === query || cid === scQuery;
+                });
+                if (match) {
+                  onTrackComplaint(match.id);
+                }
+              }}
+              title={language === 'Telugu' ? "శోధించండి" : "Search"}
+            >
+              <span>🔍</span> {language === 'Telugu' ? "శోధించండి" : "Search"}
+            </button>
           </div>
 
           {/* Sorter selection drop */}
@@ -185,7 +224,7 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
 
         {/* Tab filters list */}
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
-          {['All', 'Submitted', 'In Progress', 'Resolved'].map(filter => (
+          {['All', 'Submitted', 'Pending', 'In Progress', 'Resolved'].map(filter => (
             <button 
               key={filter} 
               className={`btn ${activeFilter === filter ? 'btn-primary' : 'btn-secondary'}`}
@@ -197,7 +236,7 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
               }}
               onClick={() => { setActiveFilter(filter); setCurrentPage(1); }}
             >
-              {filter === 'All' ? t.all : filter === 'Submitted' ? t.submitted : filter === 'In Progress' ? t.inProgress : t.resolved}
+              {filter === 'All' ? t.all : filter === 'Submitted' ? t.submitted : filter === 'Pending' ? t.pending : filter === 'In Progress' ? t.inProgress : t.resolved}
             </button>
           ))}
         </div>
@@ -245,9 +284,20 @@ export default function ComplaintHistory({ user, language, onTrackComplaint, onB
                     <span style={{ margin: '0 8px', color: 'var(--border-color)' }}>|</span>
                     <span style={{ fontWeight: '700', fontSize: '14px', color: 'var(--primary)' }}>{item.complaint_category}</span>
                   </div>
-                  <span className={`status-pill ${getStatusClass(item.status)}`}>
-                    {item.status}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {(() => {
+                      const rawP = item.complexity || item.priority || 'Medium';
+                      const pVal = rawP === 'Low' ? 'Normal' : rawP;
+                      return (
+                        <span className={`priority-pill priority-${pVal.toLowerCase()}`} style={{ fontSize: '10.5px', padding: '3px 8px' }}>
+                          {pVal === 'Critical' ? '🚨 Critical' : pVal === 'High' ? '🟠 High' : pVal === 'Medium' ? '🟡 Medium' : '🟢 Normal'}
+                        </span>
+                      );
+                    })()}
+                    <span className={`status-pill ${getStatusClass(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </div>
                 </div>
                 
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', marginBottom: '12px', fontWeight: '500', lineHeight: '1.5' }}>

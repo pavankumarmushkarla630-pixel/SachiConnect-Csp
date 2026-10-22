@@ -1,0 +1,82 @@
+[
+  {
+    "alert_id": "ALERT-423619",
+    "complaint_id": "SC-7378",
+    "to": "admin.sachivalayam@ap.gov.in",
+    "cc": "collector.satyasai@ap.gov.in",
+    "from": "emergency-alerts@sachivalayam.ap.gov.in",
+    "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-7378 - Duvvada (Roads)",
+    "priority": "CRITICAL",
+    "dispatched_at": "2026-10-22T16:34:21.404Z",
+    "status": "Delivered",
+    "body_text": "\n================================================================================\n🚨 GOVERNMENT OF ANDHRA PRADESH - GRAMA WARD SACHIVALAYAM CONNECT\n🚨 CRITICAL EMERGENCY GRIEVANCE DISPATCH NOTIFICATION\n================================================================================\nALERT ID       : ALERT-423619\nCOMPLAINT ID   : SC-7378\nPRIORITY       : CRITICAL (IMMEDIATE FIELD INTERVENTION MANDATED)\nCATEGORY       : Roads\nVILLAGE / AREA : Duvvada\nREGISTERED AT  : 2026-10-22T16:30:25.501Z\nSLA DEADLINE   : Immediate Inspection within 2 Hours\n\nCITIZEN DETAILS:\n- Name         : Lakshmi Devi\n- Mobile       : 9876543210\n\nPROBLEM DESCRIPTION:\n\"Streetlight bulb damaged on main road near bus stand.\"\n\nLOCATION COORDINATES:\n- Latitude     : 17.70305976374926\n- Longitude    : 83.16665629849201\n- Map Link     : https://www.google.com/maps?q=17.70305976374926,83.16665629849201\n\nACTION REQUIRED:\nPlease dispatch the Mandal Quick Response Team and Ward Secretariat Engineer immediately.\nAccess Official Portal: http://localhost:5173/\n\nNotification Dispatched To:\n- Primary Admin   : admin.sachivalayam@ap.gov.in\n- Nodal Collector : collector.satyasai@ap.gov.in\n================================================================================\n",
+    "complaint_summary": {
+      "resident_name": "Lakshmi Devi",
+      "resident_phone": "9876543210",
+      "village_area": "Duvvada",
+      "category": "Roads",
+      "description": "Streetlight bulb damaged on main road near bus stand.",
+      "coordinates": "17.70305976374926, 83.16665629849201"
+    }
+  },
+  {
+    "alert_id": "ALERT-180093",
+    "complaint_id": "SC-7378",
+    "to": "admin.sachivalayam@ap.gov.in",
+    "cc": "collector.satyasai@ap.gov.in",
+    "from": "emergency-alerts@sachivalayam.ap.gov.in",
+    "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-7378 - Duvvada (Roads)",
+    "priority": "CRITICAL",
+    "dispatched_at": "2026-10-22T16:30:25.501Z",
+    "status": "Delivered",
+    "body_text": "\n================================================================================\n🚨 GOVERNMENT OF ANDHRA PRADESH - GRAMA WARD SACHIVALAYAM CONNECT\n🚨 CRITICAL EMERGENCY GRIEVANCE DISPATCH NOTIFICATION\n================================================================================\nALERT ID       : ALERT-180093\nCOMPLAINT ID   : SC-7378\nPRIORITY       : CRITICAL (IMMEDIATE FIELD INTERVENTION MANDATED)\nCATEGORY       : Roads\nVILLAGE / AREA : Duvvada\nREGISTERED AT  : 2026-10-22T16:30:25.501Z\nSLA DEADLINE   : Immediate Inspection within 2 Hours\n\nCITIZEN DETAILS:\n- Name         : Lakshmi Devi\n- Mobile       : 9876543210\n\nPROBLEM DESCRIPTION:\n\"Streetlight bulb damaged on main road near bus stand.\"\n\nLOCATION COORDINATES:\n- Latitude     : 17.70305976374926\n- Longitude    : 83.16665629849201\n- Map Link     : https://www.google.com/maps?q=17.70305976374926,83.16665629849201\n\nACTION REQUIRED:\nPlease dispatch the Mandal Quick Response Team and Ward Secretariat Engineer immediately.\nAccess Official Portal: http://localhost:5173/\n\nNotification Dispatched To:\n- Primary Admin   : admin.sachivalayam@ap.gov.in\n- Nodal Collector : collector.satyasai@ap.gov.in\n================================================================================\n",
+    "complaint_summary": {
+      "resident_name": "Lakshmi Devi",
+      "resident_phone": "9876543210",
+      "village_area": "Duvvada",
+      "category": "Roads",
+      "description": "Streetlight bulb damaged on main road near bus stand.",
+      "coordinates": "17.70305976374926, 83.16665629849201"
+    }
+  },
+  {
+    "alert_id": "ALERT-243000",
+    "complaint_id": "SC-4268",
+    "to": "admin.sachivalayam@ap.gov.in",
+    "cc": "collector.satyasai@ap.gov.in",
+    "from": "emergency-alerts@sachivalayam.ap.gov.in",
+    "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-4268 - Kothacheruvu (Streetlights)",
+    "priority": "CRITICAL",
+    "dispatched_at": "2026-10-22T16:25:37.263Z",
+    "status": "Delivered",
+    "body_text": "\n================================================================================\n🚨 GOVERNMENT OF ANDHRA PRADESH - GRAMA WARD SACHIVALAYAM CONNECT\n🚨 CRITICAL EMERGENCY GRIEVANCE DISPATCH NOTIFICATION\n================================================================================\nALERT ID       : ALERT-243000\nCOMPLAINT ID   : SC-4268\nPRIORITY       : CRITICAL (IMMEDIATE FIELD INTERVENTION MANDATED)\nCATEGORY       : Streetlights\nVILLAGE / AREA : Kothacheruvu\nREGISTERED AT  : 2026-10-22T16:25:37.263Z\nSLA DEADLINE   : Immediate Inspection within 2 Hours\n\nCITIZEN DETAILS:\n- Name         : Ramesh Naidu\n- Mobile       : 9876543210\n\nPROBLEM DESCRIPTION:\n\"The main street light on temple road has been completely non-functional for 4 days creating serious hazard at night.\"\n\nLOCATION COORDINATES:\n- Latitude     : 17.703023065793946\n- Longitude    : 83.16667343743626\n- Map Link     : https://www.google.com/maps?q=17.703023065793946,83.16667343743626\n\nACTION REQUIRED:\nPlease dispatch the Mandal Quick Response Team and Ward Secretariat Engineer immediately.\nAccess Official Portal: http://localhost:5173/\n\nNotification Dispatched To:\n- Primary Admin   : admin.sachivalayam@ap.gov.in\n- Nodal Collector : collector.satyasai@ap.gov.in\n================================================================================\n",
+    "complaint_summary": {
+      "resident_name": "Ramesh Naidu",
+      "resident_phone": "9876543210",
+      "village_area": "Kothacheruvu",
+      "category": "Streetlights",
+      "description": "The main street light on temple road has been completely non-functional for 4 days creating serious hazard at night.",
+      "coordinates": "17.703023065793946, 83.16667343743626"
+    }
+  },
+  {
+    "alert_id": "ALERT-397971",
+    "complaint_id": "SC-2526",
+    "to": "admin.sachivalayam@ap.gov.in",
+    "cc": "collector.satyasai@ap.gov.in",
+    "from": "emergency-alerts@sachivalayam.ap.gov.in",
+    "subject": "🚨 [EMERGENCY ALERT] Critical Grievance #SC-2526 - Kothacheruvu (Water Supply)",
+    "priority": "CRITICAL",
+    "dispatched_at": "2026-10-22T15:59:36.309Z",
+    "status": "Delivered",
+    "body_text": "\n================================================================================\n🚨 GOVERNMENT OF ANDHRA PRADESH - GRAMA WARD SACHIVALAYAM CONNECT\n🚨 CRITICAL EMERGENCY GRIEVANCE DISPATCH NOTIFICATION\n================================================================================\nALERT ID       : ALERT-397971\nCOMPLAINT ID   : SC-2526\nPRIORITY       : CRITICAL (IMMEDIATE FIELD INTERVENTION MANDATED)\nCATEGORY       : Water Supply\nVILLAGE / AREA : Kothacheruvu\nREGISTERED AT  : 2026-10-22T15:59:36.308Z\nSLA DEADLINE   : Immediate Inspection within 2 Hours\n\nCITIZEN DETAILS:\n- Name         : Sita Devi\n- Mobile       : 9876543210\n\nPROBLEM DESCRIPTION:\n\"Live electrical wire snapped and hanging across main road! High emergency risk to schoolchildren and vehicles.\"\n\nLOCATION COORDINATES:\n- Latitude     : 17.70311037654084\n- Longitude    : 83.16691737148618\n- Map Link     : https://www.google.com/maps?q=17.70311037654084,83.16691737148618\n\nACTION REQUIRED:\nPlease dispatch the Mandal Quick Response Team and Ward Secretariat Engineer immediately.\nAccess Official Portal: http://localhost:5173/\n\nNotification Dispatched To:\n- Primary Admin   : admin.sachivalayam@ap.gov.in\n- Nodal Collector : collector.satyasai@ap.gov.in\n================================================================================\n",
+    "complaint_summary": {
+      "resident_name": "Sita Devi",
+      "resident_phone": "9876543210",
+      "village_area": "Kothacheruvu",
+      "category": "Water Supply",
+      "description": "Live electrical wire snapped and hanging across main road! High emergency risk to schoolchildren and vehicles.",
+      "coordinates": "17.70311037654084, 83.16691737148618"
+    }
+  }
+]

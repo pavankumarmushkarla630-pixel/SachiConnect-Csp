@@ -53,6 +53,178 @@ const findClosestVillageName = (latitude, longitude, isTelugu) => {
   return isTelugu ? closestTe : closest;
 };
 
+// ── Voice Assistant Matching Maps & Dictionaries ──
+const CATEGORY_VOICE_MAP = {
+  'Roads': ['road', 'roads', 'pothole', 'potholes', 'street', 'highway', 'path', 'రోడ్లు', 'రోడ్డు', 'గుంతలు', 'రహదారి', 'రహదారులు', 'రోడ్'],
+  'Streetlights': ['light', 'lights', 'streetlight', 'streetlights', 'lamp', 'lamps', 'electricity', 'power', 'dark', 'bulb', 'వీధి దీపాలు', 'లైట్లు', 'కరెంట్', 'దీపం', 'చీకటి', 'బల్బు', 'లైట్'],
+  'Water Supply': ['water', 'drinking water', 'tap', 'supply', 'pipe', 'leakage', 'leak', 'నీరు', 'నీటి సరఫరా', 'మంచినీరు', 'పైప్', 'లీకేజీ', 'కుళాయి', 'తాగునీరు', 'నీళ్లు'],
+  'Drainage': ['drain', 'drainage', 'sewer', 'gutter', 'clog', 'dirty water', 'overflow', 'మురుగు', 'కాలువ', 'డ్రైనేజీ', 'డ్రైన్', 'మురికి నీరు'],
+  'Sanitation': ['garbage', 'waste', 'trash', 'dustbin', 'cleaning', 'sanitation', 'sweep', 'dump', 'చెత్త', 'పారిశుధ్యం', 'శుభ్రం', 'చెత్తబుట్ట', 'స్వీపింగ్'],
+  'Public Facilities': ['public', 'school', 'park', 'community', 'library', 'building', 'hospital', 'ప్రజా సౌకర్యాలు', 'బడి', 'పాఠశాల', 'పార్క్', 'ఆసుపత్రి', 'భవనం'],
+  'Other': ['other', 'general', 'complaint', 'government', 'issue', 'ఇతర', 'సాధారణ', 'సమస్య'],
+};
+
+const COMPLEXITY_VOICE_MAP = {
+  'Critical': ['critical', 'emergency', 'hazard', 'immediate', 'danger', 'urgent emergency', 'ఎమర్జెన్సీ', 'అత్యవసరం', 'ప్రమాదకరం', 'ప్రమాదం', 'వెంటనే'],
+  'High': ['high', 'urgent', 'repair', 'severe', 'త్వరగా', 'అధికం', 'అత్యవసర మరమ్మత్తు', 'తీవ్రం'],
+  'Medium': ['medium', 'moderate', 'attention', 'needed', 'మధ్యస్థం', 'శ్రద్ధ అవసరం'],
+  'Normal': ['normal', 'routine', 'low', 'standard', 'regular', 'సాధారణం', 'సాధారణ సమస్య', 'రోజువారీ']
+};
+
+const matchCategoryByVoice = (text) => {
+  if (!text) return null;
+  const clean = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').toLowerCase().trim();
+  for (const cat of Object.keys(CATEGORY_VOICE_MAP)) {
+    if (clean === cat.toLowerCase()) return cat;
+  }
+  for (const [cat, kws] of Object.entries(CATEGORY_VOICE_MAP)) {
+    if (kws.some(kw => clean.includes(kw.toLowerCase()))) {
+      return cat;
+    }
+  }
+  return null;
+};
+
+const matchComplexityByVoice = (text) => {
+  if (!text) return null;
+  const clean = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').toLowerCase().trim();
+  for (const lvl of Object.keys(COMPLEXITY_VOICE_MAP)) {
+    if (clean === lvl.toLowerCase()) return lvl;
+  }
+  for (const [lvl, kws] of Object.entries(COMPLEXITY_VOICE_MAP)) {
+    if (kws.some(kw => clean.includes(kw.toLowerCase()))) {
+      return lvl;
+    }
+  }
+  return null;
+};
+
+const matchVillageByVoice = (text, isTelugu) => {
+  if (!text) return null;
+  const clean = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').toLowerCase().trim();
+  for (const v of AP_VILLAGES) {
+    if (clean.includes(v.en.toLowerCase()) || clean.includes(v.te)) {
+      return isTelugu ? v.te : v.en;
+    }
+  }
+  const cleaned = clean.replace(/my village is|village|area|place|గ్రామం|ప్రాంతం/gi, '').trim();
+  return cleaned || text.trim();
+};
+
+// ── Interactive Voice Assistant Live Drawer ──
+function VoiceLivePanel({ field, isListening, interimText, feedback, isTelugu, prompt, chips, onSelectChip, isDictation, onClose }) {
+  return (
+    <div className="voice-live-panel">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="soundwave-bars">
+            <span className="soundwave-bar"></span>
+            <span className="soundwave-bar"></span>
+            <span className="soundwave-bar"></span>
+            <span className="soundwave-bar"></span>
+            <span className="soundwave-bar"></span>
+          </div>
+          <span style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB' }}>
+            {isListening ? (isTelugu ? '🎙️ వింటున్నాము... మాట్లాడండి' : '🎙️ Listening... Speak now') : (isTelugu ? '🎙️ వాయిస్ అసిస్టెంట్' : '🎙️ Voice Assistant')}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '700',
+            padding: '2px 8px',
+            borderRadius: '6px'
+          }}
+          title={isTelugu ? 'ముగించు / మూసివేయి' : 'Close / Done'}
+        >
+          {isDictation ? (isTelugu ? '⏹️ పూర్తయింది' : '⏹️ Done') : '✕'}
+        </button>
+      </div>
+
+      <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: '600' }}>
+        {prompt}
+      </div>
+
+      {interimText && (
+        <div style={{ 
+          background: 'rgba(255,255,255,0.7)', 
+          padding: '6px 10px', 
+          borderRadius: '8px', 
+          border: '1px solid rgba(37,99,235,0.2)',
+          fontSize: '12.5px',
+          fontStyle: 'italic',
+          color: '#1D4ED8',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          <span>💬</span>
+          <span>"{interimText}"</span>
+        </div>
+      )}
+
+      {feedback && (
+        <div style={{
+          fontSize: '11.5px',
+          fontWeight: '700',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          background: feedback.type === 'success' ? 'rgba(22, 163, 74, 0.1)' : feedback.type === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(37, 99, 235, 0.1)',
+          color: feedback.type === 'success' ? '#16A34A' : feedback.type === 'error' ? '#DC2626' : '#2563EB',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
+        }}>
+          <span>{feedback.type === 'success' ? '✅' : feedback.type === 'error' ? '⚠️' : 'ℹ️'}</span>
+          <span>{feedback.text}</span>
+        </div>
+      )}
+
+      {chips && chips.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', alignSelf: 'center', marginRight: '2px' }}>
+            {isTelugu ? 'తక్షణ ఎంపిక:' : 'Quick voice tap:'}
+          </span>
+          {chips.map(chip => (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => onSelectChip(chip)}
+              style={{
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '3px 8px',
+                fontSize: '11px',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = '#2563EB';
+                e.currentTarget.style.color = '#2563EB';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+            >
+              🗣️ {chip}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function VoiceAssistant({ language, user, onSubmissionComplete, onCancel, showToast, changeLanguage, selectedVillage }) {
   const isTelugu = language === 'Telugu';
 
@@ -63,7 +235,7 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('sachivalayam_form_draft');
     if (saved) { try { return JSON.parse(saved); } catch (e) {} }
-    return { name: user?.name || '', phone: user?.phone || '', village: selectedVillage || user?.village || '', category: '', description: '' };
+    return { name: user?.name || '', phone: user?.phone || '', village: selectedVillage || user?.village || '', category: '', complexity: 'Medium', description: '' };
   });
 
   // Sync selectedVillage from dashboard
@@ -89,6 +261,19 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
+  // Voice Assistant states for per-question voice input
+  const [activeVoiceField, setActiveVoiceField] = useState(null); // 'village' | 'category' | 'complexity' | 'description' | 'location' | 'photo'
+  const [isListening, setIsListening] = useState(false);
+  const [interimVoiceText, setInterimVoiceText] = useState('');
+  const [voiceFeedback, setVoiceFeedback] = useState(null); // { type, text }
+
+  const recognitionRef = useRef(null);
+  const activeVoiceFieldRef = useRef(null);
+
+  useEffect(() => {
+    activeVoiceFieldRef.current = activeVoiceField;
+  }, [activeVoiceField]);
+
   const categories = [
     { en: 'Roads',             te: 'రోడ్లు',              icon: '🛣️' },
     { en: 'Streetlights',      te: 'వీధి దీపాలు',          icon: '💡' },
@@ -97,6 +282,49 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
     { en: 'Sanitation',        te: 'పారిశుధ్యం',           icon: '🧹' },
     { en: 'Public Facilities', te: 'ప్రజా సౌకర్యాలు',      icon: '🏫' },
     { en: 'Other',             te: 'ఇతర సమస్యలు',          icon: '❓' },
+  ];
+
+  const complexityLevels = [
+    {
+      id: 'Normal',
+      en: 'Normal',
+      te: 'సాధారణం',
+      tagEn: 'Routine Issue',
+      tagTe: 'సాధారణ సమస్య',
+      icon: '🟢',
+      color: '#16A34A',
+      activeClass: 'active-normal'
+    },
+    {
+      id: 'Medium',
+      en: 'Medium',
+      te: 'మధ్యస్థం',
+      tagEn: 'Attention Needed',
+      tagTe: 'శ్రద్ధ అవసరం',
+      icon: '🟡',
+      color: '#2563EB',
+      activeClass: 'active-medium'
+    },
+    {
+      id: 'High',
+      en: 'High',
+      te: 'అధికం',
+      tagEn: 'Urgent Repair',
+      tagTe: 'అత్యవసర మరమ్మత్తు',
+      icon: '🟠',
+      color: '#EA580C',
+      activeClass: 'active-high'
+    },
+    {
+      id: 'Critical',
+      en: 'Critical',
+      te: 'అత్యవసరం',
+      tagEn: 'Emergency / Hazard',
+      tagTe: 'ప్రమాదకరం / అత్యవసరం',
+      icon: '🔴',
+      color: '#DC2626',
+      activeClass: 'active-critical'
+    }
   ];
 
   const t = {
@@ -111,6 +339,15 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
       villagePlaceholder: "Enter your village or area name",
       categoryLabel: "📋 Complaint Category",
       categorySelect: "-- Select Category --",
+      complexityLabel: "⚡ Problem Complexity & Urgency",
+      complexitySubtitle: "Select the urgency so officials can prioritize and dispatch support rapidly",
+      complexityHelp: "High & Critical issues are highlighted with top priority on the official dashboard.",
+      immediateAction: "Immediate Emergency Action (Email Dispatched)",
+      highPriority: "High Priority Resolution",
+      standardPriority: "Standard Priority Queue",
+      routinePriority: "Normal Routine Maintenance",
+      criticalEmergencyNotice: "Critical Emergency Priority: This issue is treated as an active emergency. An automated high-priority email alert will be dispatched to Admin & Nodal Officers (admin.sachivalayam@ap.gov.in) immediately upon submission.",
+      emergencyEmailDispatchedToast: "🚨 Critical Emergency Grievance registered! Instant alert email sent to Admin.",
       descriptionLabel: "✍️ Complaint Description",
       descriptionPlaceholder: "Describe your problem in detail here...",
       gpsTitle: "🛰️ Geotagging Status",
@@ -133,6 +370,11 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
       requiredVillage: "Please enter your village / area",
       requiredCategory: "Please select a category",
       requiredDescription: "Please describe your complaint",
+      voiceGuideTitle: "🎙️ Voice Assistant or Manual Typing",
+      voiceGuideDesc: "Click the 🎙️ Voice button beside each question to speak your details, or type manually as you wish.",
+      voiceBtn: "Voice",
+      voiceListening: "Listening...",
+      voiceDone: "Done",
     },
     Telugu: {
       title: "ఫిర్యాదు నమోదు",
@@ -145,6 +387,15 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
       villagePlaceholder: "మీ గ్రామం లేదా ప్రాంతం పేరు",
       categoryLabel: "📋 సమస్య వర్గం",
       categorySelect: "-- వర్గాన్ని ఎంచుకోండి --",
+      complexityLabel: "⚡ సమస్య సంక్లిష్టత మరియు ప్రాధాన్యత",
+      complexitySubtitle: "అధికారులు ప్రాధాన్యత ఇచ్చి త్వరగా పరిష్కరించేందుకు తీవ్రతను ఎంచుకోండి",
+      complexityHelp: "అత్యవసర మరియు అధిక తీవ్రత గల సమస్యలు అధికారుల డాష్‌బోర్డులో ముందుగా చూపబడతాయి.",
+      immediateAction: "అత్యవసర స్పందన (ఈమెయిల్ అలర్ట్ పంపబడుతుంది)",
+      highPriority: "అధిక ప్రాధాన్యత పరిష్కారం",
+      standardPriority: "ప్రామాణిక ప్రాధాన్యత",
+      routinePriority: "సాధారణ ప్రాధాన్యత (Normal)",
+      criticalEmergencyNotice: "అత్యవసర ప్రోటోకాల్: ఈ సమస్యను ఎమర్జెన్సీగా పరిగణిస్తున్నాము. మీరు సమర్పించగానే అడ్మిన్ మరియు మండల అధికారులకు ఆటోమేటిక్ అత్యవసర ఈమెయిల్ అలర్ట్ తక్షణమే చేరుతుంది.",
+      emergencyEmailDispatchedToast: "🚨 అత్యవసర ఫిర్యాదు నమోదైంది! అధికారులకు ఈమెయిల్ అలర్ట్ పంపబడింది.",
       descriptionLabel: "✍️ సమస్య వివరణ",
       descriptionPlaceholder: "సమస్యను వివరంగా ఇక్కడ టైప్ చేయండి...",
       gpsTitle: "🛰️ జియో-ట్యాగింగ్ స్థితి",
@@ -167,6 +418,11 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
       requiredVillage: "దయచేసి గ్రామం టైప్ చేయండి",
       requiredCategory: "దయచేసి వర్గాన్ని ఎంచుకోండి",
       requiredDescription: "దయచేసి వివరణ టైప్ చేయండి",
+      voiceGuideTitle: "🎙️ వాయిస్ అసిస్టెంట్ లేదా టైపింగ్",
+      voiceGuideDesc: "ప్రతి ప్రశ్న పక్కన ఉన్న 🎙️ వాయిస్ బటన్‌ని క్లిక్ చేసి మాట్లాడవచ్చు, లేదా మీ ఇష్టానుసారం టైప్ చేయవచ్చు.",
+      voiceBtn: "వాయిస్",
+      voiceListening: "వింటున్నాను...",
+      voiceDone: "పూర్తయింది",
     }
   }[language] || t.English;
 
@@ -191,10 +447,11 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
     );
   }, []);
 
-  // Cleanup camera stream
+  // Cleanup camera stream and voice assistant on unmount
   useEffect(() => {
     return () => {
       stopCamera();
+      stopVoiceAssistant();
     };
   }, []);
 
@@ -356,7 +613,244 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
     setFormData(prev => ({ ...prev, [field]: val }));
   };
 
+  const speakText = (msg) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(msg);
+        utter.lang = isTelugu ? 'te-IN' : 'en-IN';
+        utter.rate = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        if (isTelugu) {
+          const v = voices.find(vo => vo.lang.startsWith('te'));
+          if (v) utter.voice = v;
+        } else {
+          const v = voices.find(vo => vo.lang === 'en-IN' || vo.lang.startsWith('en'));
+          if (v) utter.voice = v;
+        }
+        window.speechSynthesis.speak(utter);
+      } catch (e) {
+        console.warn('Speech synthesis error:', e);
+      }
+    }
+  };
+
+  const stopVoiceAssistant = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsListening(false);
+    setActiveVoiceField(null);
+    setInterimVoiceText('');
+  };
+
+  const toggleVoiceField = (fieldKey) => {
+    if (activeVoiceField === fieldKey) {
+      stopVoiceAssistant();
+      return;
+    }
+    startVoiceForField(fieldKey);
+  };
+
+  const startVoiceForField = (fieldKey) => {
+    stopVoiceAssistant();
+    setActiveVoiceField(fieldKey);
+    setInterimVoiceText('');
+    setVoiceFeedback(null);
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const prompts = {
+      village: isTelugu ? 'దయచేసి మీ గ్రామం లేదా ప్రాంతం పేరు చెప్పండి.' : 'Please say your village or area name.',
+      category: isTelugu ? 'సమస్య వర్గాన్ని చెప్పండి: రోడ్లు, వీధి దీపాలు, నీటి సరఫరా, మురుగు లేదా పారిశుధ్యం.' : 'Please say the complaint category: Roads, Streetlights, Water supply, Drainage, or Sanitation.',
+      complexity: isTelugu ? 'సమస్య తీవ్రత చెప్పండి: సాధారణం, మధ్యస్థం, అధికం, లేదా అత్యవసరం.' : 'Please say the urgency: Normal, Medium, High, or Critical emergency.',
+      description: isTelugu ? 'మీ సమస్యను వివరంగా మాట్లాడండి.' : 'Please describe your complaint in detail.',
+      location: isTelugu ? 'లొకేషన్ తీసుకో లేదా గుర్తించు అని చెప్పండి.' : 'Say detect location or get GPS coordinates.',
+      photo: isTelugu ? 'కెమెరా ఆన్ చేయి లేదా ఫోటో తీయి అని చెప్పండి.' : 'Say open camera or take photo.'
+    };
+
+    speakText(prompts[fieldKey] || '');
+
+    if (!SpeechRecognition) {
+      setVoiceFeedback({
+        type: 'info',
+        text: isTelugu ? 'మీ బ్రౌజర్‌లో మైక్ రికగ్నిషన్ లభ్యం కాలేదు. మీరు మాన్యువల్‌గా టైప్ చేయవచ్చు లేదా క్రింది ఆప్షన్లను ఎంచుకోవచ్చు.' : 'Microphone speech recognition is not supported in this browser. You can type manually or use the quick chips below.'
+      });
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = (fieldKey === 'description');
+      recognition.interimResults = true;
+      recognition.lang = isTelugu ? 'te-IN' : 'en-IN';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            final += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+
+        const heardText = (final || interim).trim();
+        setInterimVoiceText(heardText);
+
+        if (final) {
+          handleVoiceCommit(fieldKey, final.trim());
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('SpeechRecognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          setVoiceFeedback({
+            type: 'error',
+            text: isTelugu ? 'మైక్రోఫోన్ అనుమతి నిరాకరించబడింది. మీరు మాన్యువల్‌గా టైప్ చేయవచ్చు.' : 'Microphone access denied. You can fill details by manual typing.'
+          });
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('Recognition start failed:', err);
+    }
+  };
+
+  const handleVoiceCommit = (fieldKey, speechText) => {
+    if (!speechText) return;
+
+    if (fieldKey === 'village') {
+      const resolved = matchVillageByVoice(speechText, isTelugu);
+      if (resolved) {
+        updateField('village', resolved);
+        setVoiceFeedback({
+          type: 'success',
+          text: `${isTelugu ? 'గ్రామం ఎంపిక చేయబడింది:' : 'Village selected:'} ${resolved}`
+        });
+        speakText(isTelugu ? `గ్రామం ${resolved} ఎంపిక చేయబడింది` : `Village set to ${resolved}`);
+        setTimeout(() => {
+          if (activeVoiceFieldRef.current === 'village') stopVoiceAssistant();
+        }, 1800);
+      }
+    } else if (fieldKey === 'category') {
+      const cat = matchCategoryByVoice(speechText);
+      if (cat) {
+        updateField('category', cat);
+        const catObj = categories.find(c => c.en === cat);
+        const catName = isTelugu ? (catObj?.te || cat) : cat;
+        setVoiceFeedback({
+          type: 'success',
+          text: `${isTelugu ? 'వర్గం ఎంపిక చేయబడింది:' : 'Category selected:'} ${catName}`
+        });
+        speakText(isTelugu ? `సమస్య వర్గం ${catName} ఎంపిక చేయబడింది` : `Category selected: ${catName}`);
+        setTimeout(() => {
+          if (activeVoiceFieldRef.current === 'category') stopVoiceAssistant();
+        }, 1800);
+      } else {
+        setVoiceFeedback({
+          type: 'info',
+          text: isTelugu ? `"${speechText}" గుర్తించలేదు. రోడ్లు, లైట్లు, నీరు మొదలైనవి చెప్పండి.` : `Could not match "${speechText}". Try saying Roads, Streetlights, or Water.`
+        });
+      }
+    } else if (fieldKey === 'complexity') {
+      const lvl = matchComplexityByVoice(speechText);
+      if (lvl) {
+        updateField('complexity', lvl);
+        const lvlObj = complexityLevels.find(c => c.id === lvl);
+        const lvlName = isTelugu ? (lvlObj?.te || lvl) : lvl;
+        setVoiceFeedback({
+          type: 'success',
+          text: `${isTelugu ? 'తీవ్రత ఎంపిక చేయబడింది:' : 'Urgency selected:'} ${lvlName}`
+        });
+        if (lvl === 'Critical') {
+          speakText(isTelugu ? 'అత్యవసర ప్రాధాన్యత ఎంపిక చేయబడింది. అధికారులకు తక్షణ ఈమెయిల్ అలర్ట్ పంపబడుతుంది.' : 'Critical emergency priority selected. Email alert will be sent to admin.');
+        } else {
+          speakText(isTelugu ? `సమస్య తీవ్రత ${lvlName} ఎంపిక చేయబడింది` : `Urgency set to ${lvlName}`);
+        }
+        setTimeout(() => {
+          if (activeVoiceFieldRef.current === 'complexity') stopVoiceAssistant();
+        }, 1800);
+      } else {
+        setVoiceFeedback({
+          type: 'info',
+          text: isTelugu ? `"${speechText}" అర్థం కాలేదు. సాధారణం, మధ్యస్థం, అధికం, లేదా అత్యవసరం అని చెప్పండి.` : `Could not match "${speechText}". Try saying Normal, Medium, High, or Critical.`
+        });
+      }
+    } else if (fieldKey === 'description') {
+      setFormData(prev => ({
+        ...prev,
+        description: prev.description ? (prev.description + ' ' + speechText) : speechText
+      }));
+      setVoiceFeedback({
+        type: 'success',
+        text: isTelugu ? 'వివరణ జోడించబడింది. మీరు ఇంకా మాట్లాడవచ్చు లేదా పూర్తయితే Done నొక్కండి.' : 'Dictation added. You can continue speaking or click Done.'
+      });
+    } else if (fieldKey === 'location') {
+      const lower = speechText.toLowerCase();
+      if (lower.includes('location') || lower.includes('detect') || lower.includes('gps') || lower.includes('తీసుకో') || lower.includes('గుర్తించు') || lower.includes('స్థానం')) {
+        detectLocation();
+        speakText(isTelugu ? 'స్థానాన్ని గుర్తిస్తున్నాము' : 'Detecting your location');
+        setVoiceFeedback({
+          type: 'success',
+          text: isTelugu ? 'GPS స్థానాన్ని గుర్తించాము' : 'Location detection triggered'
+        });
+        setTimeout(() => {
+          if (activeVoiceFieldRef.current === 'location') stopVoiceAssistant();
+        }, 1800);
+      }
+    } else if (fieldKey === 'photo') {
+      const lower = speechText.toLowerCase();
+      if (lower.includes('open') || lower.includes('camera') || lower.includes('కెమెరా') || lower.includes('ఆన్')) {
+        startCamera();
+        speakText(isTelugu ? 'కెమెరా ఆన్ చేస్తున్నాము' : 'Opening camera');
+        setVoiceFeedback({
+          type: 'success',
+          text: isTelugu ? 'కెమెరా ఆన్ చేయబడింది' : 'Camera opened'
+        });
+        setTimeout(() => {
+          if (activeVoiceFieldRef.current === 'photo') stopVoiceAssistant();
+        }, 1800);
+      } else if (lower.includes('photo') || lower.includes('capture') || lower.includes('take') || lower.includes('తీయి') || lower.includes('ఫొటో')) {
+        if (cameraActive) {
+          capturePhoto();
+          speakText(isTelugu ? 'ఫోటో తీయబడింది' : 'Photo captured');
+          setVoiceFeedback({
+            type: 'success',
+            text: isTelugu ? 'ఫోటో తీయబడింది' : 'Photo captured'
+          });
+          setTimeout(() => {
+            if (activeVoiceFieldRef.current === 'photo') stopVoiceAssistant();
+          }, 1800);
+        } else {
+          startCamera();
+        }
+      }
+    }
+  };
+
   const handleNext = (currentStepNum) => {
+    stopVoiceAssistant();
     if (currentStepNum === 1) {
       if (!formData.name.trim()) return showToast(t.requiredName);
       if (!formData.phone.trim() || formData.phone.length < 10) return showToast(t.requiredPhone);
@@ -393,6 +887,8 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
         resident_phone: formData.phone,
         village_area: formData.village,
         complaint_category: formData.category,
+        complexity: formData.complexity || 'Medium',
+        priority: formData.complexity || 'Medium',
         complaint_description_text: formData.description,
         photo_url,
         complaint_audio_url: '',
@@ -412,6 +908,9 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
 
       if (data.success) {
         localStorage.removeItem('sachivalayam_form_draft');
+        if (formData.complexity === 'Critical') {
+          showToast(t.emergencyEmailDispatchedToast || '🚨 Critical Emergency Grievance registered! Instant alert email sent to Admin.');
+        }
         if (onSubmissionComplete) onSubmissionComplete(data.complaint.id);
       } else {
         showToast(isTelugu ? 'ఫిర్యాదు సమర్పణ విఫలమైంది.' : 'Submission failed. Try again.');
@@ -506,15 +1005,44 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
         {/* ── Step 2: Grievance Details ── */}
         {formStep === 2 && (
           <div className="card animated-card" style={{ padding: '24px', borderRadius: '16px', animation: 'stepEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '800', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '20px', color: 'var(--text-primary)' }}>
-              📋 {isTelugu ? 'సమస్య వివరాలు' : 'Grievance Details'}
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+                📋 {isTelugu ? 'సమస్య వివరాలు' : 'Grievance Details'}
+              </h3>
+              <span style={{ fontSize: '11px', fontWeight: '800', color: '#2563EB', background: 'rgba(37,99,235,0.08)', padding: '3px 10px', borderRadius: '14px', border: '1px solid rgba(37,99,235,0.2)' }}>
+                🎙️ {isTelugu ? 'వాయిస్ లేదా టైపింగ్' : 'Voice or Manual Typing'}
+              </span>
+            </div>
+
+            {/* Hint card explaining both voice and typing options */}
+            <div className="voice-step-hint-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>💡</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: '600', lineHeight: '1.4' }}>
+                  {t.voiceGuideDesc}
+                </span>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               
-              {/* Village Input with Geolocator button */}
+              {/* Question 1: Village Input with Voice Assistant & Geolocator button */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{t.villageLabel}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                      {t.villageLabel}
+                    </label>
+                    <button
+                      type="button"
+                      className={`field-voice-btn ${activeVoiceField === 'village' ? 'is-listening' : ''}`}
+                      onClick={() => toggleVoiceField('village')}
+                      title={isTelugu ? 'వాయిస్ అసిస్టెంట్ ద్వారా గ్రామం చెప్పండి' : 'Speak village name with Voice Assistant'}
+                    >
+                      <span>{activeVoiceField === 'village' ? '🔴' : '🎙️'}</span>
+                      <span>{activeVoiceField === 'village' ? t.voiceListening : t.voiceBtn}</span>
+                    </button>
+                  </div>
                   <button 
                     type="button" 
                     style={{ 
@@ -536,21 +1064,208 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
                     🛰️ {isDetectingLocation ? t.detectingLocBtn : t.detectLocBtn}
                   </button>
                 </div>
+
+                {activeVoiceField === 'village' && (
+                  <VoiceLivePanel
+                    field="village"
+                    isListening={isListening}
+                    interimText={interimVoiceText}
+                    feedback={voiceFeedback}
+                    isTelugu={isTelugu}
+                    prompt={isTelugu ? 'మీ గ్రామం లేదా ప్రాంతం పేరు స్పష్టంగా మాట్లాడండి' : 'Speak your village or area name clearly'}
+                    chips={['Kothacheruvu', 'Bukkarayasamudram', 'Rapthadu', 'Duvvada', 'Puttaparthi', 'Dharmavaram']}
+                    onSelectChip={(v) => handleVoiceCommit('village', v)}
+                    onClose={stopVoiceAssistant}
+                  />
+                )}
+
                 <input type="text" className="form-control" list="ap-villages-list" value={formData.village} onChange={e => updateField('village', e.target.value)} placeholder={t.villagePlaceholder} style={{ fontSize: '14.5px', padding: '14px' }} />
               </div>
 
-              {/* Category selection */}
+              {/* Question 2: Category selection with Voice Assistant */}
               <div>
-                <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.categoryLabel}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                    {t.categoryLabel}
+                  </label>
+                  <button
+                    type="button"
+                    className={`field-voice-btn ${activeVoiceField === 'category' ? 'is-listening' : ''}`}
+                    onClick={() => toggleVoiceField('category')}
+                    title={isTelugu ? 'వాయిస్ అసిస్టెంట్ ద్వారా వర్గాన్ని ఎంచుకోండి' : 'Select category with Voice Assistant'}
+                  >
+                    <span>{activeVoiceField === 'category' ? '🔴' : '🎙️'}</span>
+                    <span>{activeVoiceField === 'category' ? t.voiceListening : t.voiceBtn}</span>
+                  </button>
+                </div>
+
+                {activeVoiceField === 'category' && (
+                  <VoiceLivePanel
+                    field="category"
+                    isListening={isListening}
+                    interimText={interimVoiceText}
+                    feedback={voiceFeedback}
+                    isTelugu={isTelugu}
+                    prompt={isTelugu ? 'సమస్య వర్గాన్ని చెప్పండి (ఉదా: రోడ్లు, వీధి దీపాలు, నీటి సరఫరా, మురుగు, పారిశుధ్యం)' : 'Speak category (e.g. Roads, Streetlights, Water supply, Drainage, Sanitation)'}
+                    chips={categories.map(c => isTelugu ? c.te : c.en)}
+                    onSelectChip={(cat) => handleVoiceCommit('category', cat)}
+                    onClose={stopVoiceAssistant}
+                  />
+                )}
+
                 <select className="form-control" value={formData.category} onChange={e => updateField('category', e.target.value)} style={{ fontSize: '14.5px', padding: '12px 14px', height: '52px', cursor: 'pointer' }}>
                   <option value="">{t.categorySelect}</option>
                   {categories.map(c => <option key={c.en} value={c.en}>{c.icon} {isTelugu ? c.te : c.en}</option>)}
                 </select>
               </div>
 
-              {/* Description input */}
+              {/* Question 3: Problem Complexity & Priority with Voice Assistant */}
               <div>
-                <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.descriptionLabel}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                      {t.complexityLabel}
+                    </label>
+                    <button
+                      type="button"
+                      className={`field-voice-btn ${activeVoiceField === 'complexity' ? 'is-listening' : ''}`}
+                      onClick={() => toggleVoiceField('complexity')}
+                      title={isTelugu ? 'వాయిస్ అసిస్టెంట్ ద్వారా సమస్య తీవ్రత చెప్పండి' : 'Select urgency with Voice Assistant'}
+                    >
+                      <span>{activeVoiceField === 'complexity' ? '🔴' : '🎙️'}</span>
+                      <span>{activeVoiceField === 'complexity' ? t.voiceListening : t.voiceBtn}</span>
+                    </button>
+                  </div>
+                  <span style={{ 
+                    fontSize: '11.5px', 
+                    fontWeight: '800', 
+                    color: formData.complexity === 'Critical' ? '#DC2626' : 
+                           formData.complexity === 'High' ? '#EA580C' : 
+                           (formData.complexity === 'Normal' || formData.complexity === 'Low') ? '#16A34A' : '#2563EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    {formData.complexity === 'Critical' ? `🔴 ${t.immediateAction}` :
+                     formData.complexity === 'High' ? `🟠 ${t.highPriority}` :
+                     (formData.complexity === 'Normal' || formData.complexity === 'Low') ? `🟢 ${t.routinePriority}` :
+                     `🟡 ${t.standardPriority}`}
+                  </span>
+                </div>
+
+                {activeVoiceField === 'complexity' && (
+                  <VoiceLivePanel
+                    field="complexity"
+                    isListening={isListening}
+                    interimText={interimVoiceText}
+                    feedback={voiceFeedback}
+                    isTelugu={isTelugu}
+                    prompt={isTelugu ? 'సమస్య తీవ్రత చెప్పండి: సాధారణం, మధ్యస్థం, అధికం, లేదా అత్యవసరం (Critical)' : 'Speak urgency: Normal, Medium, High, or Critical Emergency'}
+                    chips={['🟢 Normal', '🟡 Medium', '🟠 High', '🔴 Critical']}
+                    onSelectChip={(lvl) => {
+                      const cleanLvl = lvl.replace(/[🟢🟡🟠🔴\s]/g, '');
+                      handleVoiceCommit('complexity', cleanLvl);
+                    }}
+                    onClose={stopVoiceAssistant}
+                  />
+                )}
+
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                  {t.complexitySubtitle}
+                </div>
+
+                <div className="complexity-grid">
+                  {complexityLevels.map(lvl => {
+                    const isSelected = (formData.complexity || 'Medium') === lvl.id;
+                    return (
+                      <button
+                        key={lvl.id}
+                        type="button"
+                        onClick={() => updateField('complexity', lvl.id)}
+                        className={`complexity-card ${isSelected ? lvl.activeClass : ''}`}
+                      >
+                        <span style={{ fontSize: '20px', marginBottom: '4px' }}>
+                          {lvl.icon}
+                        </span>
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: isSelected ? lvl.color : 'var(--text-primary)', marginBottom: '2px' }}>
+                          {isTelugu ? lvl.te : lvl.en}
+                        </span>
+                        <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: isSelected ? '700' : '500', lineHeight: '1.2' }}>
+                          {isTelugu ? lvl.tagTe : lvl.tagEn}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Emergency Alert Protocol Banner when Critical is selected */}
+                {formData.complexity === 'Critical' && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    animation: 'slideInUp 0.3s ease'
+                  }}>
+                    <span style={{ fontSize: '24px', lineHeight: 1 }}>🚨</span>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: '900', color: '#DC2626', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        {isTelugu ? 'అత్యవసర ప్రోటోకాల్ యాక్టివ్ • ఈమెయిల్ అలర్ట్ పంపబడుతుంది' : 'EMERGENCY PROTOCOL ACTIVE • OFFICIAL EMAIL ALERT'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-primary)', lineHeight: '1.5', fontWeight: '500' }}>
+                        {t.criticalEmergencyNotice}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                  <span>⚡</span>
+                  <span>{t.complexityHelp}</span>
+                </div>
+              </div>
+
+              {/* Question 4: Description input with Voice Assistant */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label className="form-label" style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                      {t.descriptionLabel}
+                    </label>
+                    <button
+                      type="button"
+                      className={`field-voice-btn ${activeVoiceField === 'description' ? 'is-listening' : ''}`}
+                      onClick={() => toggleVoiceField('description')}
+                      title={isTelugu ? 'వాయిస్ డిక్టేషన్ ద్వారా సమస్య వివరణ చెప్పండి' : 'Dictate description with Voice Assistant'}
+                    >
+                      <span>{activeVoiceField === 'description' ? '🔴' : '🎙️'}</span>
+                      <span>{activeVoiceField === 'description' ? t.voiceListening : (isTelugu ? 'వాయిస్ డిక్టేషన్' : 'Voice Dictate')}</span>
+                    </button>
+                  </div>
+                  {formData.description && (
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                      {formData.description.length} {isTelugu ? 'అక్షరాలు' : 'chars'}
+                    </span>
+                  )}
+                </div>
+
+                {activeVoiceField === 'description' && (
+                  <VoiceLivePanel
+                    field="description"
+                    isListening={isListening}
+                    interimText={interimVoiceText}
+                    feedback={voiceFeedback}
+                    isTelugu={isTelugu}
+                    prompt={isTelugu ? 'మీ సమస్యను వివరంగా చెప్పండి. మాట్లాడిన పదాలు కింద టైప్ అవుతాయి.' : 'Speak your complaint in detail. Words are transcribed in real time.'}
+                    isDictation={true}
+                    onClose={stopVoiceAssistant}
+                  />
+                )}
+
                 <textarea className="form-control" rows="4" value={formData.description} onChange={e => updateField('description', e.target.value)} placeholder={t.descriptionPlaceholder} style={{ fontSize: '14.5px', padding: '14px', resize: 'vertical' }} />
               </div>
             </div>
@@ -694,7 +1409,7 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
                 type="button" 
                 className="btn btn-secondary" 
                 style={{ flex: 1, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px' }} 
-                onClick={() => setFormStep(1)}
+                onClick={() => { stopVoiceAssistant(); setFormStep(1); }}
               >
                 {isTelugu ? '← వెనుకకు' : '← Back'}
               </button>
@@ -715,7 +1430,7 @@ export default function VoiceAssistant({ language, user, onSubmissionComplete, o
                 type="button" 
                 className="btn btn-secondary" 
                 style={{ flex: 1, padding: '16px', borderRadius: '14px', fontWeight: '800', fontSize: '15px' }} 
-                onClick={() => setFormStep(2)}
+                onClick={() => { stopVoiceAssistant(); setFormStep(2); }}
                 disabled={isSubmitting}
               >
                 {isTelugu ? '← వెనుకకు' : '← Back'}

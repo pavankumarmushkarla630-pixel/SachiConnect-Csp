@@ -5,6 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import { readDB, writeDB } from './db.js';
+import { sendEmergencyEmailAlert, getEmergencyEmails } from './emailService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -344,10 +345,17 @@ router.get('/complaints', (req, res) => {
   return res.json(complaints);
 });
 
-// Get a single complaint by ID
+// Get a single complaint by ID (case-insensitive, handles with/without SC- prefix)
 router.get('/complaints/:id', (req, res) => {
   const db = readDB();
-  const complaint = db.complaints.find(c => c.id === req.params.id);
+  const rawId = (req.params.id || '').trim().toLowerCase();
+  const scPrefixed = rawId.startsWith('sc-') ? rawId : `sc-${rawId}`;
+
+  const complaint = db.complaints.find(c => {
+    const cid = (c.id || '').toLowerCase();
+    return cid === rawId || cid === scPrefixed;
+  });
+
   if (!complaint) {
     return res.status(404).json({ success: false, message: "Complaint not found." });
   }
@@ -355,13 +363,15 @@ router.get('/complaints/:id', (req, res) => {
 });
 
 // Create new complaint
-router.post('/complaints', (req, res) => {
+router.post('/complaints', async (req, res) => {
   const { 
     resident_name, 
     resident_phone,
     village_area, 
     complaint_category, 
     complaint_description_text, 
+    complexity,
+    priority,
     complaint_audio_url, 
     photo_url, 
     latitude, 
@@ -379,12 +389,17 @@ router.post('/complaints', (req, res) => {
   const idNum = Math.floor(1000 + Math.random() * 9000);
   const complaintId = `SC-${idNum}`;
 
+  let resolvedPriority = complexity || priority || "Medium";
+  if (resolvedPriority === "Low") resolvedPriority = "Normal";
+
   const newComplaint = {
     id: complaintId,
     resident_name,
     resident_phone: resident_phone || "",
     village_area,
     complaint_category,
+    complexity: resolvedPriority,
+    priority: resolvedPriority,
     complaint_description_text: complaint_description_text || "Reported via voice assistant.",
     complaint_audio_url: complaint_audio_url || "",
     photo_url: photo_url || "",
@@ -397,10 +412,33 @@ router.post('/complaints', (req, res) => {
       {
         status: "Submitted",
         updated_at: new Date().toISOString(),
-        notes: "Grievance registered successfully by " + resident_name
+        notes: `Grievance registered successfully by ${resident_name} (Priority: ${resolvedPriority})`
       }
     ]
   };
+
+  // If Critical priority, treat as an emergency and dispatch instant emergency alert email to admin
+  if (resolvedPriority === "Critical") {
+    try {
+      const emailResult = await sendEmergencyEmailAlert(newComplaint);
+      newComplaint.email_alert = {
+        sent: true,
+        alert_id: emailResult.alert_id,
+        sent_to: emailResult.to,
+        cc: emailResult.cc,
+        subject: emailResult.subject,
+        timestamp: emailResult.dispatched_at,
+        status: "Delivered"
+      };
+      newComplaint.status_history.push({
+        status: "Emergency Alert",
+        updated_at: new Date().toISOString(),
+        notes: `🚨 CRITICAL EMERGENCY PROTOCOL ACTIVATED: High-priority email alert dispatched to Admin (${emailResult.to}) and District Collectorate.`
+      });
+    } catch (emailErr) {
+      console.error("[COMPLAINT-POST] Emergency email dispatch notice:", emailErr);
+    }
+  }
 
   db.complaints.push(newComplaint);
   writeDB(db);
@@ -456,10 +494,10 @@ router.post('/transcribe', upload.single('audio'), (req, res) => {
 });
 
 
-// Update complaint status
-router.put('/complaints/:id/status', (req, res) => {
-  const { status, notes } = req.body;
-  const validStatuses = ["Submitted", "Assigned", "In Progress", "Resolved"];
+// Update complaint status (and optionally priority/complexity)
+router.put('/complaints/:id/status', async (req, res) => {
+  const { status, notes, priority, complexity } = req.body;
+  const validStatuses = ["Submitted", "Pending", "Assigned", "In Progress", "Resolved"];
 
   if (!status || !validStatuses.includes(status)) {
     return res.status(400).json({ success: false, message: "Invalid or missing status value." });
@@ -474,6 +512,30 @@ router.put('/complaints/:id/status', (req, res) => {
 
   const complaint = db.complaints[index];
   complaint.status = status;
+  if (priority || complexity) {
+    let pVal = priority || complexity;
+    if (pVal === "Low") pVal = "Normal";
+    complaint.priority = pVal;
+    complaint.complexity = pVal;
+
+    // If escalated to Critical, dispatch emergency email alert
+    if (pVal === "Critical" && (!complaint.email_alert || !complaint.email_alert.sent)) {
+      try {
+        const emailResult = await sendEmergencyEmailAlert(complaint);
+        complaint.email_alert = {
+          sent: true,
+          alert_id: emailResult.alert_id,
+          sent_to: emailResult.to,
+          cc: emailResult.cc,
+          subject: emailResult.subject,
+          timestamp: emailResult.dispatched_at,
+          status: "Delivered"
+        };
+      } catch (err) {
+        console.error("[STATUS-PUT] Emergency alert notice:", err);
+      }
+    }
+  }
   complaint.status_history.push({
     status,
     updated_at: new Date().toISOString(),
@@ -484,6 +546,100 @@ router.put('/complaints/:id/status', (req, res) => {
   writeDB(db);
 
   return res.json({ success: true, complaint });
+});
+
+// Update complaint priority / complexity directly
+router.put('/complaints/:id/priority', async (req, res) => {
+  const { priority, complexity, notes } = req.body;
+  let val = priority || complexity;
+  if (val === "Low") val = "Normal";
+  const validPriorities = ["Normal", "Medium", "High", "Critical"];
+
+  if (!val || !validPriorities.includes(val)) {
+    return res.status(400).json({ success: false, message: "Invalid priority value. Choose Normal, Medium, High, or Critical." });
+  }
+
+  const db = readDB();
+  const index = db.complaints.findIndex(c => c.id === req.params.id);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Complaint not found." });
+  }
+
+  const complaint = db.complaints[index];
+  complaint.priority = val;
+  complaint.complexity = val;
+
+  // If set to Critical, dispatch emergency alert email
+  if (val === "Critical" && (!complaint.email_alert || !complaint.email_alert.sent)) {
+    try {
+      const emailResult = await sendEmergencyEmailAlert(complaint);
+      complaint.email_alert = {
+        sent: true,
+        alert_id: emailResult.alert_id,
+        sent_to: emailResult.to,
+        cc: emailResult.cc,
+        subject: emailResult.subject,
+        timestamp: emailResult.dispatched_at,
+        status: "Delivered"
+      };
+      complaint.status_history.push({
+        status: "Emergency Alert",
+        updated_at: new Date().toISOString(),
+        notes: `🚨 CRITICAL EMERGENCY PROTOCOL ACTIVATED: High-priority email alert dispatched to Admin (${emailResult.to}) and District Collectorate.`
+      });
+    } catch (err) {
+      console.error("[PRIORITY-PUT] Emergency alert notice:", err);
+    }
+  }
+
+  complaint.status_history.push({
+    status: complaint.status,
+    updated_at: new Date().toISOString(),
+    notes: notes || `Priority / Complexity updated to ${val}`
+  });
+
+  db.complaints[index] = complaint;
+  writeDB(db);
+
+  return res.json({ success: true, complaint });
+});
+
+// Get all emergency email alerts dispatched
+router.get('/emergency-alerts', (req, res) => {
+  const alerts = getEmergencyEmails();
+  return res.json({ success: true, count: alerts.length, alerts });
+});
+
+// Re-dispatch emergency email alert for a complaint
+router.post('/complaints/:id/emergency-email', async (req, res) => {
+  const db = readDB();
+  const index = db.complaints.findIndex(c => c.id.toLowerCase() === req.params.id.toLowerCase());
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Complaint not found." });
+  }
+
+  const complaint = db.complaints[index];
+  const emailResult = await sendEmergencyEmailAlert(complaint);
+  complaint.email_alert = {
+    sent: true,
+    alert_id: emailResult.alert_id,
+    sent_to: emailResult.to,
+    cc: emailResult.cc,
+    subject: emailResult.subject,
+    timestamp: emailResult.dispatched_at,
+    status: "Delivered"
+  };
+  complaint.status_history.push({
+    status: "Emergency Alert Resent",
+    updated_at: new Date().toISOString(),
+    notes: `🚨 Emergency alert email resent to ${emailResult.to} and Collectorate.`
+  });
+
+  db.complaints[index] = complaint;
+  writeDB(db);
+
+  return res.json({ success: true, message: "Emergency email dispatched successfully.", alert: emailResult, complaint });
 });
 
 // Submit complaint feedback/rating
@@ -552,6 +708,23 @@ router.get('/analytics', (req, res) => {
     }
   });
 
+  // Complaints by Complexity / Priority
+  const byPriority = {
+    Critical: 0,
+    High: 0,
+    Medium: 0,
+    Normal: 0
+  };
+  complaints.forEach(c => {
+    let p = c.complexity || c.priority || "Medium";
+    if (p === "Low") p = "Normal";
+    if (byPriority[p] !== undefined) {
+      byPriority[p]++;
+    } else {
+      byPriority["Medium"]++;
+    }
+  });
+
   // Monthly Complaint Count
   const monthlyCount = {};
   complaints.forEach(c => {
@@ -589,6 +762,7 @@ router.get('/analytics', (req, res) => {
     total: complaints.length,
     byCategory,
     byStatus,
+    byPriority,
     monthlyCount,
     averageRating: parseFloat(averageRating),
     feedbackCount,

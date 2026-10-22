@@ -75,8 +75,12 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
       noGrievances: "No grievances registered yet.",
       summaryTitle: "Overview",
       submitted: "Submitted",
+      pending: "Pending",
       inProgress: "In Progress",
       resolved: "Resolved",
+      statusNoticeTitle: "Live Grievance Status Notice",
+      statusNoticeSub: "Details on why your grievance is in progress or pending",
+      trackProgressBtn: "Track Details",
       status: "Status",
       tabGrievances: "Grievances",
       tabChatbot: "AI Assistant",
@@ -111,8 +115,12 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
       noGrievances: "ఇంకా ఎలాంటి ఫిర్యాదులు నమోదు చేయలేదు.",
       summaryTitle: "స్థితి అవలోకనం",
       submitted: "సమర్పించబడింది",
+      pending: "పెండింగ్‌లో ఉంది",
       inProgress: "ప్రక్రియలో ఉంది",
       resolved: "పరిష్కరించబడింది",
+      statusNoticeTitle: "తాజా స్థితి సమాచారం",
+      statusNoticeSub: "మీ ఫిర్యాదు ప్రక్రియలో ఉండటానికి / పెండింగ్‌లో ఉండటానికి కారణం",
+      trackProgressBtn: "వివరాలను ట్రాక్ చేయండి",
       status: "స్థితి",
       tabGrievances: "ఫిర్యాదులు",
       tabChatbot: "సహాయక చాట్‌బాట్",
@@ -147,8 +155,12 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
     noGrievances: "No grievances registered yet.",
     summaryTitle: "Overview",
     submitted: "Submitted",
+    pending: "Pending",
     inProgress: "In Progress",
     resolved: "Resolved",
+    statusNoticeTitle: "Live Grievance Status Notice",
+    statusNoticeSub: "Details on why your grievance is in progress or pending",
+    trackProgressBtn: "Track Details",
     status: "Status",
     tabGrievances: "Grievances",
     tabChatbot: "AI Assistant",
@@ -285,7 +297,8 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
 
   // Status counters for user summary
   const counts = {
-    submitted: complaints.filter(c => c.status === 'Submitted' || c.status === 'Assigned').length,
+    submitted: complaints.filter(c => c.status === 'Submitted').length,
+    pending: complaints.filter(c => c.status === 'Pending' || c.status === 'Assigned').length,
     inProgress: complaints.filter(c => c.status === 'In Progress').length,
     resolved: complaints.filter(c => c.status === 'Resolved').length
   };
@@ -293,6 +306,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
   const getStatusClass = (status) => {
     switch (status) {
       case 'Submitted': return 'status-submitted';
+      case 'Pending': return 'status-pending';
       case 'Assigned': return 'status-assigned';
       case 'In Progress': return 'status-in-progress';
       case 'Resolved': return 'status-resolved';
@@ -300,9 +314,98 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
     }
   };
 
+  // Helper to extract clear reasoning why a complaint is In Progress or Pending
+  const getReasonMessage = (complaint) => {
+    if (complaint.pending_reason) return complaint.pending_reason;
+    if (complaint.status_history && complaint.status_history.length > 0) {
+      const latest = complaint.status_history[complaint.status_history.length - 1];
+      if (latest && latest.notes) return latest.notes;
+    }
+    if (complaint.status === 'In Progress') {
+      return language === 'Telugu'
+        ? 'ఫీల్డ్ టెక్నీషియన్ పరిశీలన పూర్తయింది. మరమ్మతు పనులు ప్రక్రియలో ఉన్నాయి మరియు మండల డిపో నుండి రీప్లేస్‌మెంట్ విడిభాగాల రాక కోసం పెండింగ్‌లో ఉన్నాయి.'
+        : 'Field inspection completed. Work is in progress; currently pending replacement fixture parts and material shipment from the Mandal Depot.';
+    }
+    if (complaint.status === 'Pending' || complaint.status === 'Assigned') {
+      return language === 'Telugu'
+        ? 'గ్రామ సచివాలయం ద్వారా స్వీకరించబడింది. సంబంధిత శాఖ సహాయకుడి క్షేత్రస్థాయి పరిశీలన మరియు అనుమతి కోసం పెండింగ్‌లో ఉంది.'
+        : 'Acknowledged by Ward Sachivalayam. Pending official on-site inspection and clearance from the department assistant.';
+    }
+    return complaint.complaint_description_text || 'Under review by local administrative authorities.';
+  };
+
+  // Grievances requiring attention (In Progress & Pending)
+  const activeAttentionComplaints = complaints.filter(
+    c => c.status === 'In Progress' || c.status === 'Pending' || c.status === 'Assigned'
+  );
+
   const handleTrackClick = (id) => {
     setSelectedComplaintId(id);
     setScreen('tracking');
+  };
+
+  // State and handler for searching complaint by ID directly on dashboard
+  const [searchIdInput, setSearchIdInput] = useState('');
+
+  const handleQuickSearchSubmit = async (e) => {
+    e.preventDefault();
+    const query = searchIdInput.trim();
+    if (!query) {
+      showToast(language === 'Telugu' ? 'దయచేసి ఫిర్యాదు ఐడిని నమోదు చేయండి' : 'Please enter a Complaint ID (e.g. SC-7821)');
+      return;
+    }
+
+    const norm = query.toLowerCase();
+    const scNorm = norm.startsWith('sc-') ? norm : `sc-${norm}`;
+
+    // 1. Check loaded complaints
+    const localMatch = complaints.find(c => {
+      const cid = (c.id || '').toLowerCase();
+      return cid === norm || cid === scNorm;
+    });
+
+    if (localMatch) {
+      handleTrackClick(localMatch.id);
+      showToast(language === 'Telugu' ? `ఫిర్యాదు ${localMatch.id} తెరవబడుతోంది!` : `Opening Grievance ${localMatch.id}...`);
+      setSearchIdInput('');
+      return;
+    }
+
+    // 2. Fetch directly from API
+    try {
+      const res = await fetch(`/api/complaints/${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const found = await res.json();
+        if (found && found.id) {
+          handleTrackClick(found.id);
+          showToast(language === 'Telugu' ? `ఫిర్యాదు ${found.id} కనుగొనబడింది!` : `Found Grievance ${found.id}!`);
+          setSearchIdInput('');
+          return;
+        }
+      }
+
+      // 3. Fallback search query
+      const searchRes = await fetch(`/api/complaints?search=${encodeURIComponent(query)}`);
+      if (searchRes.ok) {
+        const list = await searchRes.json();
+        if (Array.isArray(list) && list.length > 0) {
+          const first = list[0];
+          handleTrackClick(first.id);
+          showToast(language === 'Telugu' ? `ఫిర్యాదు ${first.id} కనుగొనబడింది!` : `Found Grievance ${first.id}!`);
+          setSearchIdInput('');
+          return;
+        }
+      }
+
+      showToast(
+        language === 'Telugu'
+          ? `ఫిర్యాదు ఐడి "${query}" కనుగొనబడలేదు. దయచేసి ఐడిని తనిఖీ చేయండి.`
+          : `Grievance ID "${query}" not found. Please verify the ID.`
+      );
+    } catch (err) {
+      console.error(err);
+      showToast('Search failed. Please try again.');
+    }
   };
 
   // Mock village directory contacts grouped by Panchayat
@@ -485,6 +588,52 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
       {activeTab === 'grievances' ? (
         /* TAB 1: GRIEVANCES & DASHBOARD */
         <div>
+          {/* Quick Search & Track Grievance by ID Card */}
+          <div className="card" style={{ 
+            padding: '16px 20px', 
+            marginBottom: '24px', 
+            background: 'var(--surface-color)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '16px',
+            boxShadow: '0 2px 10px var(--shadow-color)'
+          }}>
+            <form onSubmit={handleQuickSearchSubmit} style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 260px' }}>
+                <input 
+                  type="text" 
+                  className="form-control"
+                  placeholder={language === 'Telugu' ? "🔍 ఫిర్యాదు ఐడి ద్వారా శోధించండి (ఉదా: SC-7821)..." : "🔍 Search complaint by ID (e.g. SC-7821)..."}
+                  value={searchIdInput}
+                  onChange={(e) => setSearchIdInput(e.target.value)}
+                  style={{ 
+                    padding: '12px 16px', 
+                    fontSize: '14px', 
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--hover-bg)'
+                  }}
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                style={{ 
+                  padding: '12px 22px', 
+                  fontSize: '14px', 
+                  fontWeight: '800', 
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>🔍</span> {language === 'Telugu' ? "శోధించండి & ట్రాక్ చేయండి" : "Search & Track"}
+              </button>
+            </form>
+          </div>
+
           {/* Main Core Actions Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '28px' }}>
             
@@ -572,7 +721,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
             <h4 style={{ fontSize: '15px', color: 'var(--text-primary)', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', textAlign: 'left', fontWeight: '800' }}>
               📊 {t.summaryTitle}
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '14px' }}>
               
               {/* SUBMITTED */}
               <div style={{ 
@@ -588,6 +737,22 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                 <div style={{ position: 'absolute', top: '-30px', left: '-30px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)' }} />
                 <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.8px', zIndex: 2, position: 'relative' }}>{t.submitted}</div>
                 <div style={{ fontSize: '36px', fontWeight: '900', marginTop: '6px', color: '#FFFFFF', zIndex: 2, position: 'relative', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{counts.submitted}</div>
+              </div>
+
+              {/* PENDING */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)', 
+                padding: '20px 8px', 
+                borderRadius: '16px', 
+                textAlign: 'center', 
+                boxShadow: '0 8px 20px -6px rgba(139, 92, 246, 0.4)',
+                border: 'none',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: '-30px', left: '-30px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)' }} />
+                <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.85)', textTransform: 'uppercase', letterSpacing: '0.8px', zIndex: 2, position: 'relative' }}>{t.pending}</div>
+                <div style={{ fontSize: '36px', fontWeight: '900', marginTop: '6px', color: '#FFFFFF', zIndex: 2, position: 'relative', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{counts.pending}</div>
               </div>
 
               {/* IN PROGRESS */}
@@ -622,6 +787,116 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                 <div style={{ fontSize: '36px', fontWeight: '900', marginTop: '6px', color: '#FFFFFF', zIndex: 2, position: 'relative', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{counts.resolved}</div>
               </div>
             </div>
+
+            {/* Active Grievances Status & Reason Notice (Why In Progress & Pending) */}
+            {activeAttentionComplaints.length > 0 && (
+              <div style={{
+                marginTop: '22px',
+                padding: '18px 20px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.07) 0%, rgba(139, 92, 246, 0.07) 100%)',
+                border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                textAlign: 'left',
+                position: 'relative'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ 
+                      display: 'inline-block', 
+                      width: '10px', 
+                      height: '10px', 
+                      borderRadius: '50%', 
+                      background: '#F59E0B', 
+                      boxShadow: '0 0 0 3px rgba(245, 158, 11, 0.3)'
+                    }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: '850', color: 'var(--text-primary)', letterSpacing: '0.2px' }}>
+                      📢 {t.statusNoticeTitle}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11.5px', fontWeight: '750', color: 'var(--text-secondary)' }}>
+                    {t.statusNoticeSub}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {activeAttentionComplaints.map(c => {
+                    const isInProgress = c.status === 'In Progress';
+                    const badgeBg = isInProgress ? 'rgba(245, 158, 11, 0.15)' : 'rgba(139, 92, 246, 0.15)';
+                    const badgeColor = isInProgress ? '#D97706' : '#7C3AED';
+                    const borderAccent = isInProgress ? '#F59E0B' : '#8B5CF6';
+                    const reason = getReasonMessage(c);
+
+                    return (
+                      <div 
+                        key={c.id} 
+                        style={{
+                          background: 'var(--surface-color)',
+                          padding: '14px 16px',
+                          borderRadius: '12px',
+                          border: '1px solid var(--border-color)',
+                          boxShadow: '0 2px 8px var(--shadow-color)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: '850', fontSize: '14.5px', color: 'var(--text-primary)' }}>
+                              #{c.id}
+                            </span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                              • {c.complaint_category} ({c.village_area})
+                            </span>
+                          </div>
+                          <span style={{ 
+                            fontSize: '11px', 
+                            fontWeight: '800', 
+                            padding: '3px 10px', 
+                            borderRadius: '20px', 
+                            background: badgeBg, 
+                            color: badgeColor,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            {c.status === 'In Progress' ? t.inProgress : t.pending}
+                          </span>
+                        </div>
+
+                        <p style={{ 
+                          fontSize: '13px', 
+                          color: 'var(--text-primary)', 
+                          lineHeight: '1.5', 
+                          margin: '0 0 10px 0', 
+                          background: 'var(--hover-bg)', 
+                          padding: '10px 12px', 
+                          borderRadius: '8px',
+                          borderLeft: `3px solid ${borderAccent}`
+                        }}>
+                          <strong>{language === 'Telugu' ? 'తాజా పురోగతి & కారణం: ' : 'Status Reason & Progress: '}</strong>
+                          {reason}
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              padding: '5px 12px', 
+                              fontSize: '12px', 
+                              fontWeight: '700', 
+                              borderRadius: '8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                            onClick={() => handleTrackClick(c.id)}
+                          >
+                            🔍 {t.trackProgressBtn} →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Recent Submissions Section */}
@@ -646,6 +921,7 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                 {complaints.slice(0, 3).map((c) => {
                   const borderColors = {
                     'Submitted': '4px solid #3B82F6',
+                    'Pending': '4px solid #8B5CF6',
                     'Assigned': '4px solid #8B5CF6',
                     'In Progress': '4px solid #F59E0B',
                     'Resolved': '4px solid #10B981'
@@ -684,9 +960,14 @@ export default function ResidentDashboard({ user, language, setScreen, setSelect
                         <div style={{ fontWeight: '800', fontSize: '14.5px', color: 'var(--text-primary)' }}>{c.id}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: '600' }}>📍 {c.village_area} • {c.complaint_category}</div>
                       </div>
-                      <span className={`status-pill ${getStatusClass(c.status)}`} style={{ fontSize: '11px', padding: '4px 10px' }}>
-                        {c.status}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className={`priority-pill priority-${((c.complexity || c.priority || 'Medium').toLowerCase())}`} style={{ fontSize: '10.5px', padding: '3px 8px' }}>
+                          {(c.complexity || c.priority) === 'Critical' ? '🔴' : (c.complexity || c.priority) === 'High' ? '🟠' : (c.complexity || c.priority) === 'Low' ? '🟢' : '🟡'} {c.complexity || c.priority || 'Medium'}
+                        </span>
+                        <span className={`status-pill ${getStatusClass(c.status)}`} style={{ fontSize: '11px', padding: '4px 10px' }}>
+                          {c.status}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
